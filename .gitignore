@@ -1,11 +1,37 @@
-# Mac
-*.DS_Store
+# Mac OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# bin
+# Packages
+*.7z
+*.dmg
+*.gz
+*.bz2
+*.xz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# LaTeX intermediate files
+*.aux
+*.bbl
+*.out
+*.blg
+*.log
+*.spl
+*.fdb_latexmk
+*.fls
+*.dvi
+
+# Binaries
 bin/
-
-# Prerequisites
-*.d
 
 # Compiled Object files
 *.o
@@ -20,21 +46,17 @@ bin/
 *.map
 *.exp
 
-# Precompiled Headers
+# Precompiled headers
 *.gch
 *.pch
 
-# Compiled Dynamic libraries
+# Compiled dynamic libraries
 *.so
 *.so.*
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
+# Compiled static libraries
 *.lai
 *.la
 *.a
