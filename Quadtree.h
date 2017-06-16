@@ -6,7 +6,7 @@
 
 namespace LDG
 {
-	/** @brief A class for an n-dimensional coordinate. */
+	/** @brief An n-dimensional coordinate */
 	template<unsigned int DIM>
 	struct Coordinate<DIM>
 	{
