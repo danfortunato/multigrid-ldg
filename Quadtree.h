@@ -8,18 +8,13 @@ namespace LDG
 {
 	/** @brief A class for an n-dimensional coordinate. */
 	template<unsigned int DIM>
-	class Coordinate<DIM>
+	struct Coordinate<DIM>
 	{
-		public:
 			/** @brief Empty constructor */
-			Coordinate() { for (unsigned int i = 0; i < DIM; ++i) { x[i] = 0; }
-			}
-
+			Coordinate() { for (unsigned int i = 0; i < DIM; ++i) { x[i] = 0; } }
 		    /** @brief Access operator */
 		    inline double& operator[] (int i) { return x[i]; }
 		    inline const double& operator[] (int i) const { return x[i]; }
-
-		private:
 			/** @brief Array of coordinate components */
 			double x[DIM];
 	};
