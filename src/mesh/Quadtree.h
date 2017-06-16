@@ -74,6 +74,8 @@ namespace LDG
 			/** @brief A node in the tree */
 			struct Node
 			{
+				Node(Cell<DIM> cell_) : cell(cell_) {}
+
 				T object;
 				Cell<DIM> cell;
 				Node* children[DIM];
@@ -109,5 +111,7 @@ namespace LDG
 			int numLevels;
 	};
 }
+
+#include "Quadtree.tpp"
 
 #endif
