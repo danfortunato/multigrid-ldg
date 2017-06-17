@@ -82,7 +82,7 @@ namespace LDG
 
 				T object;
 				Cell<N> cell;
-				bool leaf;
+				bool isLeaf;
 				const int numChildren = 1 << N;
 				Node* children[numChildren];
 			};
