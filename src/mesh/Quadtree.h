@@ -91,7 +91,10 @@ namespace LDG
              *
              *  @param[in] domain : Cell representing the tree's domain
              */
-            Quadtree(Cell<N> domain);
+            Quadtree(Cell<N> domain) :
+                root(new Node(domain)),
+                numLevels(1)
+            {}
 
             /** @brief Construct a tree from a given domain that is uniformly
              *         refined n times.
@@ -99,18 +102,46 @@ namespace LDG
              *  @param[in] domain : Cell representing the tree's domain
              *  @param[in] n      : Number of refinements
              */
-            Quadtree(Cell<N> domain, int n);
+            Quadtree(Cell<N> domain, int n) :
+                root(new Node(domain)),
+                numLevels(n+1)
+            {
+                refine(n);
+            }
 
             /** @brief Destructor */
-            ~Quadtree();
+            ~Quadtree() {
+                remove(root);
+            }
+
+            /** @brief Uniformly refine the tree */
+            void refine() {
+                refine(root);
+            }
 
             /** @brief Uniformly refine the tree n times
              *
              *  @param[in] n : Number of refinements
              */
-            void refine(int n);
+            void refine(int n) {
+                for (int i=0; i<n; ++i) {
+                    refine();
+                }
+            }
 
         private:
+            /** @brief Uniformly refine starting from a given node
+             *
+             *  @param[in] node : The node at which to begin refinement
+             */
+            void refine(Node* node);
+
+            /** @brief Remove a node and its children
+             *
+             *  @param[in] node : The node to remove
+             */
+            void remove(Node* node);
+
             /** @brief The root of the tree */
             Node* root;
             /** @brief The number of levels in the tree */
