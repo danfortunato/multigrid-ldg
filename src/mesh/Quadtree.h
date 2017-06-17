@@ -7,22 +7,22 @@
 namespace LDG
 {
 	/** @brief An n-dimensional coordinate */
-	template<unsigned int DIM>
-	struct Coordinate<DIM>
+	template<unsigned int N>
+	struct Coordinate<N>
 	{
 			/** @brief Empty constructor */
-			Coordinate() { for (unsigned int i = 0; i < DIM; ++i) { x[i] = 0; } }
+			Coordinate() { for (unsigned int i = 0; i < N; ++i) { x[i] = 0; } }
 		    /** @brief Access operator */
 		    inline double& operator[] (int i) { return x[i]; }
 		    inline const double& operator[] (int i) const { return x[i]; }
 			/** @brief Array of coordinate components */
-			double x[DIM];
+			double x[N];
 	};
 
 	/** @brief Equals operator */
-	template<unsigned int DIM>
-	bool operator==(const Coordinate<DIM>& p, const Coordinate<DIM>& q) {
-	    for (unsigned int i = 0; i < DIM; i++) {
+	template<unsigned int N>
+	bool operator==(const Coordinate<N>& p, const Coordinate<N>& q) {
+	    for (unsigned int i = 0; i < N; i++) {
 	    	if (p[i] != q[i]) {
 	    		return false;
 	    	}
@@ -31,25 +31,25 @@ namespace LDG
 	}
 
 	/** @brief Unequals operator */
-	template<unsigned int DIM>
-	bool operator!=(const Coordinate<DIM>& p, const Coordinate<DIM>& q) {
+	template<unsigned int N>
+	bool operator!=(const Coordinate<N>& p, const Coordinate<N>& q) {
 	    return !(p == q);
 	}
 
 	/** @brief An n-dimensional cell. The bounding box of the cell is specified
 	 *         by the coordinates of its lower left and upper right corners.
 	 */
-	template<unsigned int DIM>
+	template<unsigned int N>
 	struct Cell
 	{
 		/** @brief Construct a cell from bounding box coordinates */
-		Cell(Coordinate<DIM> lower_, Coordinate<DIM> upper_) :
+		Cell(Coordinate<N> lower_, Coordinate<N> upper_) :
 			lower(lower_), upper(upper_)
 		{}
 
 		/** @brief Compute the width of the cell in the dimension d */
 		double width(unsigned int d) {
-			if (d >= DIM) {
+			if (d >= N) {
 				throw std::invalid_argument("Requested dimension too large.");
 			}
 			return upper[d]-lower[d];
@@ -58,34 +58,40 @@ namespace LDG
 		/** @brief Compute the volume of the cell */
 		double volume() {
 			double v = 1;
-			for (int i=0; i<DIM; ++i) { v *= width(i); }
+			for (int i=0; i<N; ++i) { v *= width(i); }
 			return v;
 		}
 
 		/** @brief The lower left and upper right coordinates of the cell */
-		Coordinate<DIM> lower, upper;
+		Coordinate<N> lower, upper;
 	};
 
 	/** @brief An n-dimensional quadtree */
-	template<class T, unsigned int DIM>
+	template<class T, unsigned int N>
 	class Quadtree
 	{
 		public:
 			/** @brief A node in the tree */
 			struct Node
 			{
-				Node(Cell<DIM> cell_) : cell(cell_) {}
+				Node(Cell<N> cell_) : cell(cell_) {
+					for (int i=0; i<numChildren; ++i) {
+						children[i] = nullptr;
+					}
+				}
 
 				T object;
-				Cell<DIM> cell;
-				Node* children[DIM];
+				Cell<N> cell;
+				bool leaf;
+				const int numChildren = 1 << N;
+				Node* children[numChildren];
 			};
 
 			/** @brief Construct an empty tree from a given domain
 			 *
 			 *  @param[in] domain : Cell representing the tree's domain
 			 */
-			Quadtree(Cell<DIM> domain);
+			Quadtree(Cell<N> domain);
 
 			/** @brief Construct a tree from a given domain that is uniformly
 			 *         refined n times.
@@ -93,7 +99,7 @@ namespace LDG
 			 *  @param[in] domain : Cell representing the tree's domain
 			 *  @param[in] n      : Number of refinements
 			 */
-			Quadtree(Cell<DIM> domain, int n);
+			Quadtree(Cell<N> domain, int n);
 
 			/** @brief Destructor */
 			~Quadtree();
