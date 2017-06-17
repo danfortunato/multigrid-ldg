@@ -7,6 +7,7 @@
 #include <mkl_spblas.h>  // MKL routines
 #include <Eigen/Dense>
 
+#define EIGEN_USE_MKL_ALL
 #define MKL_ALIGN 64
 
 namespace LDG
