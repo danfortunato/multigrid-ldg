@@ -67,7 +67,7 @@ namespace LDG
     };
 
     /** @brief An n-dimensional quadtree */
-    template<class T, unsigned int N>
+    template<typename T, unsigned int N>
     class Quadtree
     {
         public:

@@ -6,7 +6,7 @@ namespace LDG
      *
      *  @param[in] node : The node at which to begin refinement
      */
-    template<class T, unsigned int N>
+    template<typename T, unsigned int N>
     Quadtree<T,N>::refine(Node* node)
     {
         if (node) {
@@ -55,7 +55,7 @@ namespace LDG
      *
      *  @param[in] node : The node to remove
      */
-    template<class T, unsigned int N>
+    template<typename T, unsigned int N>
     Quadtree<T,N>::remove(Node* node)
     {
         if (node) {
