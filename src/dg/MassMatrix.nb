@@ -1,0 +1,221 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      7502,        213]
+NotebookOptionsPosition[      6945,        188]
+NotebookOutlinePosition[      7302,        204]
+CellTagsIndexPosition[      7259,        201]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Legendre-Gauss-Lobatto points", "Subsection",
+ CellChangeTimes->{{3.7069306761734447`*^9, 3.706930684809421*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"LGL", "[", "1", "]"}], " ", ":=", " ", 
+   RowBox[{
+    RowBox[{"LGL", "[", "1", "]"}], " ", "=", " ", 
+    RowBox[{"{", "0.", "}"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"LGL", "[", "2", "]"}], " ", ":=", " ", 
+   RowBox[{
+    RowBox[{"LGL", "[", "2", "]"}], " ", "=", " ", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"-", "1."}], ",", "1."}], "}"}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"LGL", "[", "n_Integer", "]"}], " ", "/;", " ", 
+   RowBox[{"n", ">", "0"}]}], " ", ":=", " ", 
+  RowBox[{
+   RowBox[{"LGL", "[", "n", "]"}], " ", "=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", "x", "}"}], ",", "\[IndentingNewLine]", "\t", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"Join", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", " ", 
+         RowBox[{"x", " ", "/.", " ", 
+          RowBox[{"Solve", "[", 
+           RowBox[{
+            RowBox[{
+             RowBox[{
+              SubscriptBox["\[PartialD]", "x"], 
+              RowBox[{"LegendreP", "[", 
+               RowBox[{
+                RowBox[{"n", "-", "1"}], ",", "x"}], "]"}]}], "\[Equal]", 
+             "0"}], ",", " ", "x", ",", " ", "Reals"}], "]"}]}]}], "]"}], " ",
+        "//", " ", "N"}], " ", "//", " ", "Sort"}]}], "\n", 
+    "]"}]}]}]}], "Code",
+ CellChangeTimes->{{3.706924659679161*^9, 3.706924712095026*^9}, {
+  3.7069247832868643`*^9, 3.706924826446294*^9}, {3.70692490431131*^9, 
+  3.706924919982307*^9}, {3.706924952424576*^9, 3.706925003034202*^9}, {
+  3.706925096945952*^9, 3.706925194640347*^9}, {3.7069252361839247`*^9, 
+  3.706925249431346*^9}, {3.706925307412097*^9, 3.7069254341532297`*^9}, {
+  3.706925470524857*^9, 3.7069254815704737`*^9}, {3.70692551899404*^9, 
+  3.706925522385725*^9}, {3.706925561371085*^9, 3.706925569649762*^9}, {
+  3.706925628220497*^9, 3.70692569497768*^9}, {3.70692725878098*^9, 
+  3.7069273404065847`*^9}, {3.706927370724394*^9, 3.706927501972665*^9}, {
+  3.706927580018894*^9, 3.70692773595105*^9}, {3.706928162024458*^9, 
+  3.706928163974093*^9}, {3.706928246982864*^9, 3.706928255020475*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Lagrange basis functions", "Subsection",
+ CellChangeTimes->{{3.706930690283334*^9, 3.706930694033475*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Phi]", "[", 
+    RowBox[{"x_Symbol", ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"i_Integer", ",", " ", "n_Integer"}], "}"}]}], "]"}], " ", "/;",
+    " ", 
+   RowBox[{"1", "\[LessEqual]", "i", "\[LessEqual]", "n"}]}], " ", ":=", "\n",
+   "\t", 
+  RowBox[{"InterpolatingPolynomial", "[", 
+   RowBox[{
+    RowBox[{"Transpose", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"LGL", "[", "n", "]"}], ",", " ", 
+       RowBox[{"N", "@", 
+        RowBox[{"UnitVector", "[", 
+         RowBox[{"n", ",", "i"}], "]"}]}]}], "}"}], "]"}], ",", " ", "x"}], 
+   "]"}]}]], "Code",
+ CellChangeTimes->{{3.7069262309205303`*^9, 3.706926292746649*^9}, {
+  3.706926401637258*^9, 3.706926528032824*^9}, {3.706926566311419*^9, 
+  3.706926597059306*^9}, {3.706926741355577*^9, 3.7069267447287807`*^9}, {
+  3.706926789898786*^9, 3.706926815963081*^9}, {3.7069279929643707`*^9, 
+  3.706927994142168*^9}, {3.706928084965704*^9, 3.7069281405175056`*^9}, {
+  3.706928178285619*^9, 3.7069282640518436`*^9}, {3.70692858574846*^9, 
+  3.706928589470146*^9}, {3.706929143636136*^9, 3.706929143820284*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Mass matrices", "Subsection",
+ CellChangeTimes->{{3.706930719576626*^9, 3.7069307218949347`*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"Mass1D", "[", "n_Integer", "]"}], " ", "/;", " ", 
+   RowBox[{"n", ">", "0"}]}], " ", ":=", " ", 
+  RowBox[{
+   RowBox[{"Mass1D", "[", "n", "]"}], " ", "=", " ", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", "x", "}"}], ",", "\n", "\t", 
+     RowBox[{"Table", "[", "\n", "\t\t", 
+      RowBox[{
+       RowBox[{"NIntegrate", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"\[Phi]", "[", 
+           RowBox[{"x", ",", 
+            RowBox[{"{", 
+             RowBox[{"i", ",", "n"}], "}"}]}], "]"}], "*", 
+          RowBox[{"\[Phi]", "[", 
+           RowBox[{"x", ",", 
+            RowBox[{"{", 
+             RowBox[{"j", ",", "n"}], "}"}]}], "]"}]}], ",", " ", 
+         RowBox[{"{", 
+          RowBox[{"x", ",", 
+           RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", "  ", 
+         RowBox[{"Method", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{"Automatic", ",", 
+            RowBox[{"\"\<SymbolicProcessing\>\"", "\[Rule]", "0"}]}], 
+           "}"}]}]}], "]"}], ",", "\n", "\t\t", 
+       RowBox[{"{", 
+        RowBox[{"i", ",", "n"}], "}"}], ",", " ", 
+       RowBox[{"{", 
+        RowBox[{"j", ",", "n"}], "}"}]}], "\n", "\t", "]"}]}], "\n", 
+    "]"}]}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Mass2D", "[", "n_Integer", "]"}], " ", "/;", " ", 
+   RowBox[{"n", ">", "0"}]}], " ", ":=", " ", 
+  RowBox[{
+   RowBox[{"Mass2D", "[", "n", "]"}], " ", "=", " ", 
+   RowBox[{"KroneckerProduct", "[", 
+    RowBox[{
+     RowBox[{"Mass1D", "[", "n", "]"}], ",", " ", 
+     RowBox[{"Mass1D", "[", "n", "]"}]}], "]"}]}]}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Mass3D", "[", "n_Integer", "]"}], " ", "/;", " ", 
+   RowBox[{"n", ">", "0"}]}], " ", ":=", " ", 
+  RowBox[{
+   RowBox[{"Mass3D", "[", "n", "]"}], " ", "=", " ", 
+   RowBox[{"KroneckerProduct", "[", 
+    RowBox[{
+     RowBox[{"Mass2D", "[", "n", "]"}], ",", " ", 
+     RowBox[{"Mass1D", "[", "n", "]"}]}], "]"}]}]}]}], "Code",
+ CellChangeTimes->{{3.706928024501812*^9, 3.7069280754611588`*^9}, {
+  3.7069282763489122`*^9, 3.7069282911543827`*^9}, {3.706928349862856*^9, 
+  3.706928473206059*^9}, {3.706928579390255*^9, 3.706928621148396*^9}, {
+  3.706928654362851*^9, 3.70692866439287*^9}, {3.7069287062184362`*^9, 
+  3.70692870666401*^9}, {3.7069288248367357`*^9, 3.706928857917302*^9}, {
+  3.706929839924294*^9, 3.70692988930761*^9}, {3.7069299459976063`*^9, 
+  3.706929946445425*^9}, {3.70693007577977*^9, 3.706930149584983*^9}, {
+  3.7069302646919117`*^9, 3.7069302690674143`*^9}, {3.706930306399363*^9, 
+  3.7069303068052263`*^9}}]
+}, Open  ]]
+},
+WindowSize->{808, 675},
+WindowMargins->{{4, Automatic}, {Automatic, 4}},
+FrontEndVersion->"11.0 for Mac OS X x86 (32-bit, 64-bit Kernel) (September \
+21, 2016)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 119, 1, 44, "Subsection"],
+Cell[702, 25, 2223, 54, 129, "Code"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2962, 84, 112, 1, 44, "Subsection"],
+Cell[3077, 87, 1130, 26, 72, "Code"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4244, 118, 103, 1, 44, "Subsection"],
+Cell[4350, 121, 2579, 64, 186, "Code"]
+}, Open  ]]
+}
+]
+*)
+
