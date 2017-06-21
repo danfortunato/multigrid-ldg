@@ -4,14 +4,14 @@
 #include <vector>
 #include <stdexcept>
 
-namespace LDG
+namespace DG
 {
     /** @brief An n-dimensional coordinate */
-    template<unsigned int N>
-    struct Coordinate<N>
+    template<int N>
+    struct Coordinate
     {
-            /** @brief Empty constructor */
-            Coordinate() { for (unsigned int i = 0; i < N; ++i) { x[i] = 0; } }
+            /** @brief Constructor from value */
+            Coordinate(double v = 0) { for (int i = 0; i < N; ++i) { x[i] = v; } }
             /** @brief Access operator */
             inline double& operator[] (int i) { return x[i]; }
             inline const double& operator[] (int i) const { return x[i]; }
@@ -19,10 +19,50 @@ namespace LDG
             double x[N];
     };
 
+    template<>
+    struct Coordinate<2>
+    {
+        Coordinate(double v = 0) : x(v), y(v) {}
+        Coordinate(double x_, double y_) : x(x_), y(y_) {}
+        inline double& operator[] (int i) {
+            if (i < 1 || i > 2) {
+                throw std::out_of_range("Requested component does not exist.");
+            }
+            return i==1 ? x : y;
+        }
+        inline const double& operator[] (int i) const {
+            if (i < 1 || i > 2) {
+                throw std::out_of_range("Requested component does not exist.");
+            }
+            return i==1 ? x : y;
+        }
+        double x, y;
+    };
+
+    template<>
+    struct Coordinate<3>
+    {
+        Coordinate(double v = 0) : x(v), y(v), z(v) {}
+        Coordinate(double x_, double y_, double z_) : x(x_), y(y_), z(z_) {}
+        inline double& operator[] (int i) {
+            if (i < 1 || i > 3) {
+                throw std::out_of_range("Requested component does not exist.");
+            }
+            return i==1 ? x : (i==2 ? y : z);
+        }
+        inline const double& operator[] (int i) const {
+            if (i < 1 || i > 3) {
+                throw std::out_of_range("Requested component does not exist.");
+            }
+            return i==1 ? x : (i==2 ? y : z);
+        }
+        double x, y, z;
+    };
+
     /** @brief Equals operator */
-    template<unsigned int N>
+    template<int N>
     bool operator==(const Coordinate<N>& p, const Coordinate<N>& q) {
-        for (unsigned int i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++) {
             if (p[i] != q[i]) {
                 return false;
             }
@@ -31,7 +71,7 @@ namespace LDG
     }
 
     /** @brief Unequals operator */
-    template<unsigned int N>
+    template<int N>
     bool operator!=(const Coordinate<N>& p, const Coordinate<N>& q) {
         return !(p == q);
     }
@@ -39,16 +79,22 @@ namespace LDG
     /** @brief An n-dimensional cell. The bounding box of the cell is specified
      *         by the coordinates of its lower left and upper right corners.
      */
-    template<unsigned int N>
+    template<int N>
     struct Cell
     {
+        /** @brief Construct a unit cell */
+        Cell() :
+            lower(Coordinate<N>(0)),
+            upper(Coordinate<N>(1))
+        {}
+
         /** @brief Construct a cell from bounding box coordinates */
         Cell(Coordinate<N> lower_, Coordinate<N> upper_) :
             lower(lower_), upper(upper_)
         {}
 
         /** @brief Compute the width of the cell in the dimension d */
-        double width(unsigned int d) {
+        double width(int d) {
             if (d >= N) {
                 throw std::invalid_argument("Requested dimension too large.");
             }
@@ -67,7 +113,7 @@ namespace LDG
     };
 
     /** @brief An n-dimensional quadtree */
-    template<typename T, unsigned int N>
+    template<int N>
     class Quadtree
     {
         public:
@@ -80,12 +126,30 @@ namespace LDG
                     }
                 }
 
-                T object;
+                int id;
                 Cell<N> cell;
                 bool isLeaf;
-                const int numChildren = 1 << N;
+                static const int numChildren = 1 << N;
                 Node* children[numChildren];
             };
+
+            /** @brief Construct an empty tree from the unit domain */
+            Quadtree() :
+                root(new Node(Cell<N>())),
+                numLevels(1)
+            {}
+
+            /** @brief Construct a tree from the unit domain that is uniformly
+             *         refined n times.
+             *
+             *  @param[in] n : Number of refinements
+             */
+             Quadtree(int n) :
+                root(new Node(Cell<N>())),
+                numLevels(n+1)
+            {
+                refine(n);
+            }
 
             /** @brief Construct an empty tree from a given domain
              *

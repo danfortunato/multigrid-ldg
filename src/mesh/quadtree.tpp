@@ -1,13 +1,13 @@
 #include <vector>
 
-namespace LDG
+namespace DG
 {
     /** @brief Uniformly refine starting from a given node
      *
      *  @param[in] node : The node at which to begin refinement
      */
-    template<typename T, unsigned int N>
-    Quadtree<T,N>::refine(Node* node)
+    template<int N>
+    void Quadtree<N>::refine(Quadtree<N>::Node* node)
     {
         if (node) {
             if (node->isLeaf) {
@@ -20,7 +20,7 @@ namespace LDG
                 // divide in the next dimension using these cells. At the end of
                 // this procedure the vector will contain the cells refined in
                 // all dimensions.
-                for (int d = 0; d < N; ++i) {
+                for (int d = 0; d < N; ++d) {
                     for (int j = (1<<d)-1; j >= 0; --j) {
 
                         Coordinate<N> lower1 = cells[j].lower;
@@ -39,8 +39,8 @@ namespace LDG
                 // Now that we've created all the child cells, we create the
                 // nodes. There should be numChildren cells to create.
                 assert(cells.size() == node->numChildren);
-                for (Cell<N> c : cells) {
-                    node->children[i] = new Node(c);
+                for (int i = 0; i < node->numChildren; ++i) {
+                    node->children[i] = new Node(cells[i]);
                 }
             } else {
                 // Not a leaf, refine the children
@@ -55,8 +55,8 @@ namespace LDG
      *
      *  @param[in] node : The node to remove
      */
-    template<typename T, unsigned int N>
-    Quadtree<T,N>::remove(Node* node)
+    template<int N>
+    void Quadtree<N>::remove(Node* node)
     {
         if (node) {
             if (!node->isLeaf) {
