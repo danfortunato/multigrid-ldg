@@ -17,8 +17,8 @@ namespace DG
         return (n >= sizeof(int)*8) ? 0 : n == 0 ? 1 : x * ipow(x, n-1);
     }
 
-    template<int P, int D>
-    using Mat = Eigen::Matrix<double,ipow(P,D),ipow(P,D),Eigen::RowMajor>;
+    template<int P, int N>
+    using Mat = Eigen::Matrix<double,ipow(P,N),ipow(P,N),Eigen::RowMajor>;
 }
 
 #endif

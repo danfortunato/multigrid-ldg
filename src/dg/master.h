@@ -5,11 +5,11 @@
 
 namespace DG
 {
-    template<int P, int D>
+    template<int P, int N>
     class Master
     {
-        static Mat<P,D-1> mass1D;
-        static Mat<P,D>   mass;
+        static Mat<P,N-1> mass1D;
+        static Mat<P,N>   mass;
     };
 
     // WARNING: Auto-generated code below!
