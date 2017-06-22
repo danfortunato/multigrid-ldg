@@ -7,42 +7,6 @@
 
 namespace DG
 {
-    /** @brief An n-dimensional cell. The bounding box of the cell is specified
-     *         by the coordinates of its lower left and upper right corners.
-     */
-    template<int N>
-    struct Cell
-    {
-        /** @brief Construct a unit cell */
-        Cell() :
-            lower(Coordinate<N>(0)),
-            upper(Coordinate<N>(1))
-        {}
-
-        /** @brief Construct a cell from bounding box coordinates */
-        Cell(Coordinate<N> lower_, Coordinate<N> upper_) :
-            lower(lower_), upper(upper_)
-        {}
-
-        /** @brief Compute the width of the cell in the dimension d */
-        double width(int d) {
-            if (d >= N) {
-                throw std::invalid_argument("Requested dimension too large.");
-            }
-            return upper[d]-lower[d];
-        }
-
-        /** @brief Compute the volume of the cell */
-        double volume() {
-            double v = 1;
-            for (int i=0; i<N; ++i) { v *= width(i); }
-            return v;
-        }
-
-        /** @brief The lower left and upper right coordinates of the cell */
-        Coordinate<N> lower, upper;
-    };
-
     /** @brief An n-dimensional quadtree */
     template<int N>
     class Quadtree
