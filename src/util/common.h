@@ -19,6 +19,9 @@ namespace DG
 
     template<int P, int N>
     using Mat = Eigen::Matrix<double,ipow(P,N),ipow(P,N),Eigen::RowMajor>;
+
+    template<int P, int N>
+    using Vec = Eigen::Matrix<double,ipow(P,N),1,Eigen::RowMajor>;
 }
 
 #endif
