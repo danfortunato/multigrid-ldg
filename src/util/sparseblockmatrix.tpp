@@ -1,13 +1,13 @@
 #include <vector>
 
-namespace LDG
+namespace DG
 {
     /*************************
      *** SparseBlockMatrix ***
      *************************/
 
     /** @brief Empty constructor */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix() :
         m_(0),
         n_(0),
@@ -23,8 +23,8 @@ namespace LDG
      *  @param[in] m : The number of block rows
      *  @param[in] n : The number of block columns
      */
-    template<unsigned int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(unsigned int m, unsigned int n) :
+    template<int P>
+    SparseBlockMatrix<P>::SparseBlockMatrix(int m, int n) :
         m_(m),
         n_(n),
         nnzb_(0),
@@ -38,7 +38,7 @@ namespace LDG
      *
      *  @param[in] mkl : Handle to MKL representation of matrix
      */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix(sparse_matrix_t mkl) :
         mkl_(mkl)
     {
@@ -64,8 +64,8 @@ namespace LDG
             throw std::exception();
         }
 
-        m_ = (unsigned int) m;
-        n_ = (unsigned int) n;
+        m_ = (int) m;
+        n_ = (int) n;
         nnzb_ = rowIndex_[m_];
     }
 
@@ -77,8 +77,8 @@ namespace LDG
      *  @param[in] columns  : BSR format for block columns
      *  @param[in] rowIndex : BSR format for row indices
      */
-    template<unsigned int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(unsigned int m, unsigned int n, double* values, int* columns, int* rowIndex) :
+    template<int P>
+    SparseBlockMatrix<P>::SparseBlockMatrix(int m, int n, double* values, int* columns, int* rowIndex) :
         m_(m),
         n_(n),
         nnzb_(rowIndex[m]),
@@ -118,7 +118,7 @@ namespace LDG
     }
 
     /** Destructor */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P>::~SparseBlockMatrix()
     {
         if (values_)   mkl_free(values_);
@@ -134,7 +134,7 @@ namespace LDG
      *
      *  @param[in] other : The sparse block matrix to be copied
      */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix(const SparseBlockMatrix<P>& other) :
         m_(other.m_),
         n_(other.n_),
@@ -183,7 +183,7 @@ namespace LDG
      *
      *  @param[in] other : The sparse block matrix to be copied
      */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P>& SparseBlockMatrix<P>::operator=(SparseBlockMatrix<P> other)
     {
         m_ = other.m_;
@@ -209,10 +209,10 @@ namespace LDG
      *
      *  @param[in] alpha : Scaling factor
      */
-    template<unsigned int P>
+    template<int P>
     void SparseBlockMatrix<P>::scale(double alpha)
     {
-        for (unsigned int i = 0; i < nnz(); ++i) {
+        for (int i = 0; i < nnz(); ++i) {
             values_[i] *= alpha;
         }
     }
@@ -228,7 +228,7 @@ namespace LDG
      *  @param[in]  B     : Sparse block matrix
      *  @param[out] C     : C := alpha*A + B
      */
-    template<unsigned int P>
+    template<int P>
     bool add_mm(double alpha, const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
@@ -262,7 +262,7 @@ namespace LDG
      *  @param[in]  B     : Sparse block matrix
      *  @param[out] C     : C := alpha*A^T + B
      */
-    template<unsigned int P>
+    template<int P>
     bool add_mm_t(double alpha, const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
@@ -295,7 +295,7 @@ namespace LDG
      *  @param[in]  B  : Sparse block matrix
      *  @param[out] C  : C := A * B
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_mm(const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
@@ -326,7 +326,7 @@ namespace LDG
      *  @param[in]  B  : Sparse block matrix
      *  @param[out] C  : C := A^T * B
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_mm_t(const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
@@ -357,7 +357,7 @@ namespace LDG
      *  @param[in]  x : Dense array
      *  @param[out] y : y := A*x
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_mv(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
         return multiply_add_mv(1.0, A, x, 0.0, y);
@@ -369,7 +369,7 @@ namespace LDG
      *  @param[in]  x : Dense array
      *  @param[out] y : y := A^T*x
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
         return multiply_add_mv_t(1.0, A, x, 0.0, y);
@@ -383,7 +383,7 @@ namespace LDG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A*x + beta*y
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
         // Let MKL do the arithmetic
@@ -408,7 +408,7 @@ namespace LDG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A^T*x + beta*y
      */
-    template<unsigned int P>
+    template<int P>
     bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
         // Let MKL do the arithmetic
@@ -430,7 +430,7 @@ namespace LDG
      ********************************/
 
     /** @brief Empty constructor */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrixBuilder<P>::SparseBlockMatrixBuilder() :
         m_(0),
         n_(0),
@@ -442,8 +442,8 @@ namespace LDG
      *  @param[in] m : The number of block rows
      *  @param[in] n : The number of block columns
      */
-    template<unsigned int P>
-    SparseBlockMatrixBuilder<P>::SparseBlockMatrixBuilder(unsigned int m, unsigned int n) :
+    template<int P>
+    SparseBlockMatrixBuilder<P>::SparseBlockMatrixBuilder(int m, int n) :
         m_(m),
         n_(n),
         zero_(SparseBlockMatrixBuilder<P>::Block::Zero())
@@ -456,9 +456,9 @@ namespace LDG
      *
      *  @note If it is not present the zero matrix is returned.
      */
-    template<unsigned int P>
+    template<int P>
     const typename SparseBlockMatrixBuilder<P>::Block&
-    SparseBlockMatrixBuilder<P>::getBlock(unsigned int i, unsigned int j)
+    SparseBlockMatrixBuilder<P>::getBlock(int i, int j)
     {
         if (blockExists(i,j)) {
             Index index(i,j);
@@ -474,8 +474,8 @@ namespace LDG
      *  @param[in] j : The column index
      *  @param[in] block : The block to insert
      */
-    template<unsigned int P>
-    void SparseBlockMatrixBuilder<P>::setBlock(unsigned int i, unsigned int j, const Block& block)
+    template<int P>
+    void SparseBlockMatrixBuilder<P>::setBlock(int i, int j, const Block& block)
     {
         Index index(i,j);
         blockMap_[index] = block;
@@ -486,8 +486,8 @@ namespace LDG
      *  @param[in] i : The row index
      *  @param[in] j : The column index
      */
-    template<unsigned int P>
-    bool SparseBlockMatrixBuilder<P>::blockExists(unsigned int i, unsigned int j)
+    template<int P>
+    bool SparseBlockMatrixBuilder<P>::blockExists(int i, int j)
     {
         if (i >= m_ || j >= n_) {
             throw std::out_of_range("Block index is out of range");
@@ -497,7 +497,7 @@ namespace LDG
     }
 
     /** @brief Convert to MKL representation */
-    template<unsigned int P>
+    template<int P>
     SparseBlockMatrix<P> SparseBlockMatrixBuilder<P>::build()
     {
         // Get the indices of all the blocks and order them (in row-major order)
@@ -513,9 +513,9 @@ namespace LDG
         int* columns   = (int *)    mkl_malloc(nnzb() * sizeof(int),    MKL_ALIGN);
         int* rowIndex  = (int *)    mkl_malloc((m_+1) * sizeof(int),    MKL_ALIGN);
 
-        unsigned int r = 0;
-        unsigned int rowStart = -1;
-        for (unsigned int k = 0; k < nnzb(); ++k) {
+        int r = 0;
+        int rowStart = -1;
+        for (int k = 0; k < nnzb(); ++k) {
             const Block& block = blockMap_.at(keys[k]);
             std::copy(block.data(), block.data() + block.size(), &values[k*blockSize()]);
             columns[k] = keys[k].j;
@@ -535,8 +535,8 @@ namespace LDG
      *  @param[in] m : The number of block rows
      *  @param[in] n : The number of block columns
      */
-    template<unsigned int P>
-    void SparseBlockMatrixBuilder<P>::reset(unsigned int m, unsigned int n)
+    template<int P>
+    void SparseBlockMatrixBuilder<P>::reset(int m, int n)
     {
         m_ = m;
         n_ = n;

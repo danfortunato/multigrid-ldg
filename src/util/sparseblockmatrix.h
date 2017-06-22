@@ -3,14 +3,9 @@
 
 #include <unordered_map> // std::unordered_map
 #include <stdexcept>     // std::out_of_range
-#include <mkl.h>         // MKL
-#include <mkl_spblas.h>  // MKL routines
-#include <Eigen/Dense>
+#include "common.h"
 
-#define EIGEN_USE_MKL_ALL
-#define MKL_ALIGN 64
-
-namespace LDG
+namespace DG
 {
     /** @brief A sparse block matrix class
      *
@@ -22,7 +17,7 @@ namespace LDG
      *  intuitive block map representation to the internal MKL format. All
      *  arithmetic is currently done by MKL.
      */
-    template<unsigned int P>
+    template<int P>
     class SparseBlockMatrix
     {
         public:
@@ -32,9 +27,9 @@ namespace LDG
 
             /** Constructor */
             SparseBlockMatrix();
-            SparseBlockMatrix(unsigned int m, unsigned int n);
+            SparseBlockMatrix(int m, int n);
             SparseBlockMatrix(sparse_matrix_t mkl);
-            SparseBlockMatrix(unsigned int m, unsigned int n, double* values, int* columns, int* rowIndex);
+            SparseBlockMatrix(int m, int n, double* values, int* columns, int* rowIndex);
 
             /** Destructor */
             ~SparseBlockMatrix();
@@ -46,31 +41,31 @@ namespace LDG
             SparseBlockMatrix<P>& operator=(SparseBlockMatrix<P> other);
 
             /** The total number of rows in the matrix */
-            unsigned int rows() const { return m_*P; }
+            int rows() const { return m_*P; }
 
             /** The total number of columns in the matrix */
-            unsigned int cols() const { return n_*P; }
+            int cols() const { return n_*P; }
 
             /** The total size of the matrix */
-            unsigned int size() const { return rows()*cols(); }
+            int size() const { return rows()*cols(); }
 
             /** The number of block rows in the matrix */
-            unsigned int blockRows() const { return m_; }
+            int blockRows() const { return m_; }
 
             /** The number of block columns in the matrix */
-            unsigned int blockCols() const { return n_; }
+            int blockCols() const { return n_; }
 
             /** The number of rows (or columns) per block */
-            static unsigned int blockDim() { return P; }
+            static int blockDim() { return P; }
 
             /** The number of elements per block */
-            static unsigned int blockSize() { return P*P; }
+            static int blockSize() { return P*P; }
 
             /** The number of nonzero blocks in the matrix */
-            unsigned int nnzb() const { return nnzb_; }
+            int nnzb() const { return nnzb_; }
 
             /** The number of explicitly stored elements in the matrix */
-            unsigned int nnz() const { return blockSize()*nnzb(); }
+            int nnz() const { return blockSize()*nnzb(); }
 
             /** Get a handle to the MKL representation */
             sparse_matrix_t getMKL() const { return mkl_; };
@@ -81,13 +76,13 @@ namespace LDG
         private:
 
             /** The number of block rows */
-            unsigned int m_;
+            int m_;
 
             /** The number of block columns */
-            unsigned int n_;
+            int n_;
 
             /** The number of nonzero blocks */
-            unsigned int nnzb_;
+            int nnzb_;
 
             /** MKL data */
             double* values_;
@@ -100,8 +95,8 @@ namespace LDG
     struct Index
     {
         Index() = default;
-        Index(unsigned int i_, unsigned int j_) : i(i_), j(j_) {}
-        unsigned int i, j;
+        Index(int i_, int j_) : i(i_), j(j_) {}
+        int i, j;
 
         bool operator<(const Index &other) const
         {
@@ -121,8 +116,8 @@ namespace LDG
         // Note that this is more compact than Cantor's pairing function!
         std::size_t operator()(const Index& index) const
         {
-            unsigned int i = index.i;
-            unsigned int j = index.j;
+            int i = index.i;
+            int j = index.j;
             return i>=j ? i*i+i+j : i+j*j;
         }
     };
@@ -135,7 +130,7 @@ namespace LDG
      *  this stage, only matrix assembly. Once matrix assembly is complete, an
      *  optimized BSR MKL representation is created and arithmetic can be done.
      */
-    template<unsigned int P>
+    template<int P>
     class SparseBlockMatrixBuilder
     {
         public:
@@ -146,57 +141,57 @@ namespace LDG
 
             /** Constructor */
             SparseBlockMatrixBuilder();
-            SparseBlockMatrixBuilder(unsigned int m, unsigned int n);
+            SparseBlockMatrixBuilder(int m, int n);
 
             /** The total number of rows in the matrix */
-            unsigned int rows() const { return m_*P; }
+            int rows() const { return m_*P; }
 
             /** The total number of columns in the matrix */
-            unsigned int cols() const { return n_*P; }
+            int cols() const { return n_*P; }
 
             /** The total size of the matrix */
-            unsigned int size() const { return rows()*cols(); }
+            int size() const { return rows()*cols(); }
 
             /** The number of block rows in the matrix */
-            unsigned int blockRows() const { return m_; }
+            int blockRows() const { return m_; }
 
             /** The number of block columns in the matrix */
-            unsigned int blockCols() const { return n_; }
+            int blockCols() const { return n_; }
 
             /** The number of rows (or columns) per block */
-            static unsigned int blockDim() { return P; }
+            static int blockDim() { return P; }
 
             /** The number of elements per block */
-            static unsigned int blockSize() { return P*P; }
+            static int blockSize() { return P*P; }
 
             /** The number of nonzero blocks in the matrix */
-            unsigned int nnzb() const { return blockMap_.size(); }
+            int nnzb() const { return blockMap_.size(); }
 
             /** The number of explicitly stored elements in the matrix */
-            unsigned int nnz() const { return blockSize()*nnzb(); }
+            int nnz() const { return blockSize()*nnzb(); }
 
             /** Get a block */
-            const Block& getBlock(unsigned int i, unsigned int j);
+            const Block& getBlock(int i, int j);
 
             /** Set a block */
-            void setBlock(unsigned int i, unsigned int j, const Block& block);
+            void setBlock(int i, int j, const Block& block);
 
             /** Check if a block exists */
-            bool blockExists(unsigned int i, unsigned int j);
+            bool blockExists(int i, int j);
 
             /** Convert to MKL representation */
             SparseBlockMatrix<P> build();
 
             /** Reset */
-            void reset(unsigned int m, unsigned int n);
+            void reset(int m, int n);
 
         private:
 
             /** The number of block rows */
-            unsigned int m_;
+            int m_;
 
             /** The number of block columns */
-            unsigned int n_;
+            int n_;
 
             /** A map of the blocks in the sparse matrix.
              *  This provides an easy way for the user to construct the matrix. */
