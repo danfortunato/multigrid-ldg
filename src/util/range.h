@@ -1,41 +1,116 @@
-#ifndef ITERATOR_H
-#define ITERATOR_H
+#ifndef RANGE_H
+#define RANGE_H
 
 #include <array>
 #include <stdexcept>
 
 namespace DG
 {
-    /** @brief An N-dimensional iterator */
+    // Forward declaration of iterators
     template<int... Args>
-    class Iterator;
+    class RangeIterator;
 
-    /** @brief An N-dimensional iterator with extent P */
+    // Variadic template declaration
+    template<int... Args>
+    class Range;
+
+    /** @brief An N-dimensional range with extent P */
     template<int P, int N>
-    class Iterator<P,N>
+    class Range<P,N>
     {
         public:
-            Iterator()
+            // Iterators
+            typedef RangeIterator<P,N> iterator;
+            static iterator begin() { return iterator(); }
+            static iterator end() { return iterator(0); }
+    };
+
+    /** @brief An N-dimensional range */
+    template<int N>
+    class Range<N>
+    {
+        public:
+            Range() = delete;
+
+            Range(int max)
+            {
+                min_.fill(0);
+                max_.fill(max);
+                validate();
+            }
+
+            Range(int min, int max)
+            {
+                min_.fill(min);
+                max_.fill(max);
+                validate();
+            }
+
+            Range(std::array<int,N> max) :
+                max_(max)
+            {
+                min_.fill(0);
+                validate();
+            }
+
+            Range(std::array<int,N> min, std::array<int,N> max) :
+                min_(min),
+                max_(max)
+            {
+                validate();
+            }
+
+            bool isEmpty() const
+            {
+                return isEmpty_;
+            }
+
+            // Iterators
+            friend class RangeIterator<N>;
+            typedef RangeIterator<N> iterator;
+            iterator begin() { return iterator(*this); }
+            iterator end() { return iterator(*this,0); }
+
+        private:
+            void validate()
+            {
+                isEmpty_ = true;
+                for (int i=0; i<N; ++i) {
+                    if (min_[i] >= max_[i]) {
+                        max_[i] = min_[i]+1;
+                        squash_[i] = 0;
+                    } else {
+                        squash_[i] = 1;
+                        isEmpty_ = false;
+                    }
+                }
+            }
+
+            bool isEmpty_;
+            std::array<int,N> min_, max_, squash_;
+    };
+
+    /*****************
+     *** Iterators ***
+     *****************/
+
+    /** @brief An iterator for an N-dimensional range with extent P */
+    template<int P, int N>
+    class RangeIterator<P,N>
+    {
+        public:
+            RangeIterator()
             {
                 index_.fill(0);
             }
 
-            static Iterator<P,N> begin()
+            RangeIterator(const int)
             {
-                Iterator<P,N> it;
-                it.index_.fill(0);
-                return it;
+                index_.fill(0);
+                index_[0] = P;
             }
 
-            static Iterator<P,N> end()
-            {
-                Iterator<P,N> it;
-                it.index_.fill(0);
-                it.index_[0] = P;
-                return it;
-            }
-
-            bool operator==(const Iterator<P,N>& x) const
+            bool operator==(const RangeIterator<P,N>& x) const
             {
                 for (int i=0; i<N; ++i) {
                     if (index_[i] != x.index_[i]) {
@@ -45,12 +120,12 @@ namespace DG
                 return true;
             }
 
-            bool operator!=(const Iterator<P,N>& x) const
+            bool operator!=(const RangeIterator<P,N>& x) const
             {
                 return !(*this == x);
             }
 
-            Iterator<P,N>& operator++()
+            RangeIterator<P,N>& operator++()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -63,14 +138,14 @@ namespace DG
                 return *this;
             }
 
-            Iterator<P,N> operator++(int)
+            RangeIterator<P,N> operator++(int)
             {
-                Iterator<P,N> tmp = *this;
+                RangeIterator<P,N> tmp = *this;
                 ++(*this); 
                 return tmp;
             }
 
-            Iterator<P,N>& operator--()
+            RangeIterator<P,N>& operator--()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -82,9 +157,9 @@ namespace DG
                 return *this;
             }
 
-            Iterator<P,N> operator--(int)
+            RangeIterator<P,N> operator--(int)
             {
-                Iterator<P,N> tmp = *this;
+                RangeIterator<P,N> tmp = *this;
                 --(*this);
                 return tmp;
             }
@@ -111,57 +186,36 @@ namespace DG
                 return lin;
             }
 
-        private:
+        protected:
             std::array<int,N> index_;
     };
 
-    /** @brief An N-dimensional iterator */
+    /** @brief An iterator for an N-dimensional range */
     template<int N>
-    class Iterator<N>
+    class RangeIterator<N>
     {
         public:
-            Iterator() = delete;
-            
-            Iterator(int max)
+            RangeIterator() {}
+
+            RangeIterator(const Range<N>& range) :
+                min_(range.min_),
+                max_(range.max_),
+                squash_(range.squash_)
             {
-                min_.fill(0);
-                max_.fill(max);
                 index_ = min_;
-                validate();
+                if (range.isEmpty()) index_[0] = max_[0];
             }
 
-            Iterator(int min, int max)
+            RangeIterator(const Range<N>& range, const int) :
+                min_(range.min_),
+                max_(range.max_),
+                squash_(range.squash_)
             {
-                min_.fill(min);
-                max_.fill(max);
                 index_ = min_;
-                validate();
+                index_[0] = max_[0];
             }
 
-            Iterator(std::array<int,N> min, std::array<int,N> max) :
-                index_(min),
-                min_(min),
-                max_(max)
-            {
-                validate();
-            }
-
-            Iterator<N> begin()
-            {
-                Iterator<N> it(min_, max_);
-                it.index_ = min_;
-                return it;
-            }
-
-            Iterator<N> end()
-            {
-                Iterator<N> it(min_, max_);
-                it.index_ = min_;
-                it.index_[0] = max_[0];
-                return it;
-            }
-
-            bool operator==(const Iterator<N>& x) const
+            bool operator==(const RangeIterator<N>& x) const
             {
                 for (int i=0; i<N; ++i) {
                     if (index_[i] != x.index_[i]) {
@@ -171,12 +225,12 @@ namespace DG
                 return true;
             }
 
-            bool operator!=(const Iterator<N>& x) const
+            bool operator!=(const RangeIterator<N>& x) const
             {
                 return !(*this == x);
             }
 
-            Iterator<N>& operator++()
+            RangeIterator<N>& operator++()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -189,14 +243,14 @@ namespace DG
                 return *this;
             }
 
-            Iterator<N> operator++(int)
+            RangeIterator<N> operator++(int)
             {
-                Iterator<N> tmp = *this;
+                RangeIterator<N> tmp = *this;
                 ++(*this); 
                 return tmp;
             }
 
-            Iterator<N>& operator--()
+            RangeIterator<N>& operator--()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -208,9 +262,9 @@ namespace DG
                 return *this;
             }
 
-            Iterator<N> operator--(int)
+            RangeIterator<N> operator--(int)
             {
-                Iterator<N> tmp = *this;
+                RangeIterator<N> tmp = *this;
                 --(*this);
                 return tmp;
             }
@@ -237,22 +291,7 @@ namespace DG
                 return lin;
             }
 
-        private:
-            void validate()
-            {
-                bool all = true;
-                for (int i=0; i<N; ++i) {
-                    if (min_[i] >= max_[i]) {
-                        max_[i] = min_[i]+1;
-                        squash_[i] = 0;
-                    } else {
-                        squash_[i] = 1;
-                        all = false;
-                    }
-                }
-                if (all) index_ = end().index_;
-            }
-
+        protected:
             std::array<int,N> index_, min_, max_, squash_;
     };
 }

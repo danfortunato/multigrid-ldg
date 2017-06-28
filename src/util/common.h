@@ -15,7 +15,7 @@ namespace DG
     template<typename T>
     constexpr T ipow(T x, int n)
     {
-        return (n >= sizeof(int)*8) ? 0 : n == 0 ? 1 : x * ipow(x, n-1);
+        return ((size_t)n >= sizeof(int)*8) ? 0 : n == 0 ? 1 : x * ipow(x, n-1);
     }
 
     template<int P, int N>
