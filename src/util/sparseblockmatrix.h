@@ -1,5 +1,5 @@
-#ifndef SPARSE_BLOCK_MATRIX
-#define SPARSE_BLOCK_MATRIX
+#ifndef SPARSE_BLOCK_MATRIX_H
+#define SPARSE_BLOCK_MATRIX_H
 
 #include <unordered_map> // std::unordered_map
 #include <stdexcept>     // std::out_of_range

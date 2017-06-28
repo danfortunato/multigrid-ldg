@@ -1,5 +1,5 @@
-#ifndef MASTER
-#define MASTER
+#ifndef MASTER_H
+#define MASTER_H
 
 #include "common.h"
 

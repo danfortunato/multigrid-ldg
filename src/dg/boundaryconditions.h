@@ -1,5 +1,5 @@
-#ifndef BOUNDARY_CONDITIONS
-#define BOUNDARY_CONDITIONS
+#ifndef BOUNDARY_CONDITIONS_H
+#define BOUNDARY_CONDITIONS_H
 
 #include "mesh.h"
 #include "function.h"

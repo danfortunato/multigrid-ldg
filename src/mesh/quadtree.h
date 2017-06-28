@@ -1,5 +1,5 @@
-#ifndef QUADTREE
-#define QUADTREE
+#ifndef QUADTREE_H
+#define QUADTREE_H
 
 #include <vector>
 #include <stdexcept>
