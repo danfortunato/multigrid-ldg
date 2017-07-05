@@ -30,12 +30,12 @@ namespace DG
                 data_.fill(value);
             }
 
-            T& operator()(std::array<int,N> index)
+            T& operator()(Tuple<int,N> index)
             {
                 return data_[flatten(index)];
             }
 
-            const T& operator()(std::array<int,N> index) const
+            const T& operator()(Tuple<int,N> index) const
             {
                 return data_[flatten(index)];
             }
@@ -53,11 +53,11 @@ namespace DG
             // Iterators
             friend class NDArrayIterator<T,P,N>;
             typedef NDArrayIterator<T,P,N> iterator;
-            iterator begin() { return iterator(*this); }
-            iterator end()  { return iterator(*this,0); }
+            iterator begin() { return iterator(this); }
+            iterator end() { return iterator(this,0); }
 
         private:
-            int flatten(std::array<int,N> index)
+            int flatten(Tuple<int,N> index)
             {
                 int lin = index[0];
                 for (int i=1; i<N; ++i) {
@@ -90,7 +90,7 @@ namespace DG
                 data_.resize(length_, value);
             }
 
-            NDArray(std::array<int,N> sizes) :
+            NDArray(Tuple<int,N> sizes) :
                 sizes_(sizes)
             {
                 length_ = 1;
@@ -100,7 +100,7 @@ namespace DG
                 data_.resize(length_);
             }
 
-            NDArray(std::array<int,N> sizes, T value) :
+            NDArray(Tuple<int,N> sizes, T value) :
                 sizes_(sizes)
             {
                 length_ = 1;
@@ -110,14 +110,14 @@ namespace DG
                 data_.resize(length_, value);
             }
 
-            T& operator()(std::array<int,N> i)
+            T& operator()(Tuple<int,N> index)
             {
-                return data_[flatten(i)];
+                return data_[flatten(index)];
             }
 
-            const T& operator()(std::array<int,N> i) const
+            const T& operator()(Tuple<int,N> index) const
             {
-                return data_[flatten(i)];
+                return data_[flatten(index)];
             }
 
             int size()
@@ -133,11 +133,11 @@ namespace DG
             // Iterators
             friend class NDArrayIterator<T,N>;
             typedef NDArrayIterator<T,N> iterator;
-            iterator begin() { return iterator(*this); }
-            iterator end()  { return iterator(*this,0); }
+            iterator begin() { return iterator(this); }
+            iterator end() { return iterator(this,0); }
 
         private:
-            int flatten(std::array<int,N> index)
+            int flatten(Tuple<int,N> index)
             {
                 int lin = index[0];
                 for (int i=1; i<N; ++i) {
@@ -147,7 +147,7 @@ namespace DG
             }
 
             int length_;
-            std::array<int,N> sizes_;
+            Tuple<int,N> sizes_;
             std::vector<int> data_;
     };
 
@@ -160,27 +160,27 @@ namespace DG
     class NDArrayIterator<T,P,N> : public RangeIterator<P,N>
     {
         public:
-            NDArrayIterator(NDArray<T,P,N>& array) :
+            NDArrayIterator(NDArray<T,P,N>* array) :
                 array_(array)
             {}
 
-            NDArrayIterator(NDArray<T,P,N>& array, const int) :
+            NDArrayIterator(NDArray<T,P,N>* array, const int) :
                 RangeIterator<P,N>(0),
                 array_(array)
             {}
 
             T& operator*() const
             {
-                return array_.data_[RangeIterator<P,N>::linearIndex()];
+                return array_->data_[RangeIterator<P,N>::linearIndex()];
             }
 
             T* operator->() const
             {
-                return array_.data_.data();
+                return array_->data_.data();
             }
 
         private:
-            NDArray<T,P,N>& array_;
+            NDArray<T,P,N>* array_;
     };
 
     /** @brief An iterator for an N-dimensional array */
@@ -188,28 +188,28 @@ namespace DG
     class NDArrayIterator<T,N> : public RangeIterator<N>
     {
         public:
-            NDArrayIterator(NDArray<T,N>& array) :
-                RangeIterator<N>(Range<N>(array.sizes_)),
+            NDArrayIterator(NDArray<T,N>* array) :
+                RangeIterator<N>(Range<N>(array->sizes_)),
                 array_(array)
             {}
 
-            NDArrayIterator(NDArray<T,N>& array, const int) :
-                RangeIterator<N>(Range<N>(array.sizes_),0),
+            NDArrayIterator(NDArray<T,N>* array, const int) :
+                RangeIterator<N>(Range<N>(array->sizes_),0),
                 array_(array)
             {}
 
             T& operator*() const
             {
-                return array_.data_[RangeIterator<N>::linearIndex()];
+                return array_->data_[RangeIterator<N>::linearIndex()];
             }
 
             T* operator->() const
             {
-                return array_.data_.data();
+                return array_->data_.data();
             }
 
         private:
-            NDArray<T,N>& array_;
+            NDArray<T,N>* array_;
     };
 }
 

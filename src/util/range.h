@@ -1,7 +1,6 @@
 #ifndef RANGE_H
 #define RANGE_H
 
-#include <array>
 #include <stdexcept>
 
 namespace DG
@@ -46,14 +45,14 @@ namespace DG
                 validate();
             }
 
-            Range(std::array<int,N> max) :
+            Range(Tuple<int,N> max) :
                 max_(max)
             {
                 min_.fill(0);
                 validate();
             }
 
-            Range(std::array<int,N> min, std::array<int,N> max) :
+            Range(Tuple<int,N> min, Tuple<int,N> max) :
                 min_(min),
                 max_(max)
             {
@@ -87,7 +86,7 @@ namespace DG
             }
 
             bool isEmpty_;
-            std::array<int,N> min_, max_, squash_;
+            Tuple<int,N> min_, max_, squash_;
     };
 
     /*****************
@@ -164,7 +163,7 @@ namespace DG
                 return tmp;
             }
 
-            const std::array<int,N>& index() const
+            const Tuple<int,N> index() const
             {
                 return index_;
             }
@@ -187,7 +186,7 @@ namespace DG
             }
 
         protected:
-            std::array<int,N> index_;
+            Tuple<int,N> index_;
     };
 
     /** @brief An iterator for an N-dimensional range */
@@ -269,7 +268,7 @@ namespace DG
                 return tmp;
             }
 
-            const std::array<int,N>& index() const
+            const Tuple<int,N> index() const
             {
                 return index_;
             }
@@ -292,7 +291,7 @@ namespace DG
             }
 
         protected:
-            std::array<int,N> index_, min_, max_, squash_;
+            Tuple<int,N> index_, min_, max_, squash_;
     };
 }
 
