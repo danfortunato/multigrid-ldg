@@ -1,70 +1,131 @@
 #include <vector>
+#include <algorithm>
+#include <queue>
 
 namespace DG
 {
-    /** @brief Uniformly refine starting from a given node
-     *
-     *  @param[in] node : The node at which to begin refinement
-     */
+    /** @brief Construct a node and its children */
     template<int N>
-    void Quadtree<N>::refine(Quadtree<N>::Node* node)
+    void Quadtree<N>::build(int id, int level)
     {
-        if (node) {
-            if (node->isLeaf) {
-                std::vector<Cell<N>> cells(node->numChildren);
-                cells[0] = node->cell;
-
-                // Refine the node's cell by recursively dividing the cell in
-                // each dimension. To do this, we use a vector of cells as a
-                // scratch pad to track the divisions we've done so far, and
-                // divide in the next dimension using these cells. At the end of
-                // this procedure the vector will contain the cells refined in
-                // all dimensions.
-                for (int d = 0; d < N; ++d) {
-                    for (int j = (1<<d)-1; j >= 0; --j) {
-
-                        Coordinate<N> lower1 = cells[j].lower;
-                        Coordinate<N> upper1 = cells[j].upper;
-                        upper1[d] -= cells[j].width(d)/2;
-
-                        Coordinate<N> lower2 = cells[j].lower;
-                        Coordinate<N> upper2 = cells[j].upper;
-                        lower2[d] += cells[j].width(d)/2;
-
-                        cells[2*j]   = Cell<N>(lower1, upper1);
-                        cells[2*j+1] = Cell<N>(lower2, upper2);
+        numLevels_ = std::max(level+1,numLevels_);
+        tree[id].level = level;
+        tree[id].height = 0;
+        if ((tree[id].cell.width() > h(tree[id].cell.lower + tree[id].cell.width()/2)).all()) {
+            // Build children
+            Tuple<double,N> mid = tree[id].cell.lower + tree[id].cell.width()/2;
+            for (RangeIterator<2,N> it; it != Range<2,N>::end(); ++it) {
+                Tuple<double,N> lower = tree[id].cell.lower;
+                Tuple<double,N> upper = tree[id].cell.upper;
+                for (int i=0; i<N; ++i) {
+                    if (it(i)) {
+                        lower[i] = mid[i];
+                    } else {
+                        upper[i] = mid[i];
                     }
                 }
+                int next = tree.size();
+                Node node(Cell<N>(lower,upper),next,id);
+                tree.push_back(node);
+                tree[id].children(it.index()) = next;
+                build(next,level+1);
+            }
+            // Set height
+            for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
+                tree[id].height = std::max(tree[*it].height, tree[id].height);
+            }
+            tree[id].height++;
+        }
+    }
 
-                // Now that we've created all the child cells, we create the
-                // nodes. There should be numChildren cells to create.
-                assert(cells.size() == node->numChildren);
-                for (int i = 0; i < node->numChildren; ++i) {
-                    node->children[i] = new Node(cells[i]);
+    /** @brief Find the neighbors of a given node in a given dimension and
+     *         direction */
+    template<int N>
+    std::vector<int> Quadtree<N>::neighbors(int id, int dim, Direction dir)
+    {
+        std::vector<int> v;
+        auto cond = [&](Node& node) {
+            return isNeighbor(tree[id], node, dim, dir) || isParent(tree[id], node);
+        };
+        auto accum = [&](Node& node) {
+            v.push_back(node.id);
+        };
+        search(cond, accum, 0);
+        return v;
+    }
+
+    /** @brief Is node B a neighbor of node A? */
+    template<int N>
+    bool Quadtree<N>::isNeighbor(Node& a, Node& b, int dim, Direction dir)
+    {
+        // In the same plane?
+        double planeA = (dir == kLeft) ? a.cell.lower[dim] : a.cell.upper[dim];
+        double planeB = (dir == kLeft) ? b.cell.upper[dim] : b.cell.lower[dim];
+        if (planeA != planeB) {
+            return false;
+        } else {
+            for (int i=0; i<N; ++i) {
+                if (i != dim) {
+                    if (!(b.cell.upper[i] > a.cell.lower[i] && b.cell.lower[i] < a.cell.upper[i])) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /** @brief Is node B a parent of node A? */
+    template<int N>
+    bool Quadtree<N>::isParent(Node& a, Node& b)
+    {
+        return (a.cell.lower >= b.cell.lower).all() && (a.cell.upper <= b.cell.upper).all();
+    }
+
+    /** @brief Search the tree with pruning based on a condition */
+    template<int N>
+    void Quadtree<N>::search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id)
+    {
+        if (cond(tree[id])) {
+            if (!tree[id].isLeaf()) {
+                for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
+                    search(cond, accum, *it);
                 }
             } else {
-                // Not a leaf, refine the children
-                for (int i = 0; i < node->numChildren; ++i) {
-                    refine(node->children[i]);
-                }
+                accum(tree[id]);
             }
         }
     }
 
-    /** @brief Remove a node and its children
-     *
-     *  @param[in] node : The node to remove
-     */
+    /** @brief DFS helper */
     template<int N>
-    void Quadtree<N>::remove(Node* node)
+    void Quadtree<N>::dfs(std::function<void(Node&)> f, int id)
     {
-        if (node) {
-            if (!node->isLeaf) {
-                for (int i = 0; i < node->numChildren; ++i) {
-                    remove(node->children[i]);
+        f(tree[id]);
+        if (!tree[id].isLeaf()) {
+            for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
+                dfs(f, *it);
+            }
+        }
+    }
+
+    /** @brief Apply f to the tree in a breadth-first order */
+    template<int N>
+    void Quadtree<N>::bfs(std::function<void(Node&)> f)
+    {
+        std::queue<int> q;
+        q.push(0);
+        while (!q.empty())
+        {
+            int id = q.front();
+            f(tree[id]);
+            q.pop();
+            if (!tree[id].isLeaf())
+            {
+                for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
+                    q.push(*it);
                 }
             }
-            delete node;
         }
     }
 }
