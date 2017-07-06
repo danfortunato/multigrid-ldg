@@ -27,11 +27,11 @@ namespace DG
 
     /** Compile-time-sized vector */
     template<int N>
-    using Vec = Eigen::Matrix<double,N,1,Eigen::RowMajor>;
+    using Vec = Eigen::Matrix<double,N,1>;
 
     /** Compile-time-sized tuple */
     template<typename T, int N>
-    using Tuple = Eigen::Array<T,N,1,Eigen::ColMajor>;
+    using Tuple = Eigen::Array<T,N,1>;
 
     /** Compile-time-sized tensor product matrix */
     template<int P, int N>
@@ -39,7 +39,7 @@ namespace DG
 
     /** Compile-time-sized tensor product vector */
     template<int P, int N>
-    using KronVec = Eigen::Matrix<double,ipow(P,N),1,Eigen::RowMajor>;
+    using KronVec = Eigen::Matrix<double,ipow(P,N),1>;
 
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>
