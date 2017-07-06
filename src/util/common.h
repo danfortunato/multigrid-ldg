@@ -1,7 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define EIGEN_NO_DEBUG
 #define EIGEN_USE_MKL_ALL
 #define MKL_ALIGN 64
 

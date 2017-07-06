@@ -16,6 +16,13 @@ namespace DG
         kRight
     };
 
+    /** @brief A strategy for coarsening the quadtree */
+    enum CoarseningStrategy
+    {
+        kEqualCoarsening,
+        kRapidCoarsening
+    };
+
     /** @brief An n-dimensional cell. The bounding box of the cell is specified
      *         by the coordinates of its lower left and upper right corners. */
     template<int N>
@@ -98,7 +105,6 @@ namespace DG
                 int height;
                 int parent;
                 Cell<N> cell;
-                bool isLeaf() { return height == 0; }
                 static const int numChildren = 1 << N;
                 NDArray<int,2,N> children;
             };
@@ -139,27 +145,40 @@ namespace DG
                 return tree[id];
             }
 
-            std::vector<int> level(int l)
+            /** @brief Is this node a leaf for the given coarsening? */
+            bool isLeaf(Node& node, int coarsening = 0)
+            {
+                assert(coarsening>=0 && coarsening<numLevels_);
+                if (coarseningStrategy_ == kRapidCoarsening) {
+                    return node.height == coarsening || (node.height < coarsening && tree[node.parent].height > coarsening);
+                } else {
+                    int clevel = numLevels_-1-coarsening;
+                    return node.level == clevel || (node.level < clevel && node.height == 0);
+                }
+            }
+
+            /** @brief Return a list of elements at a given layer in the hierarchy */
+            std::vector<int> layer(int l)
             {
                 assert(l>=0 && l<numLevels_);
-                std::vector<int> level;
-                dfs([&](Node node) {
-                    if (node.level == l) {
-                        level.push_back(node.id);
+                std::vector<int> layer;
+                dfs([&](Node& node) {
+                    if (isLeaf(node, l)) {
+                        layer.push_back(node.id);
                     }
-                });
-                return level;
+                }, l);
+                return layer;
             }
 
             /** @brief Find the neighbors of a given node in a given dimension
              *         and direction */
-            std::vector<int> neighbors(int id, int dim, Direction dir);
+            std::vector<int> neighbors(int id, int dim, Direction dir, int coarsening = 0);
             /** @brief Apply f to the tree in a depth-first order */
-            void dfs(std::function<void(Node&)> f) { dfs(f,0); }
+            void dfs(std::function<void(Node&)> f, int coarsening = 0) { dfs(f, 0, coarsening); }
             /** @brief Apply f to the tree in a breadth-first order */
-            void bfs(std::function<void(Node&)> f);
+            void bfs(std::function<void(Node&)> f, int coarsening = 0);
             /** @brief Search the tree with pruning based on a condition */
-            void search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id);
+            void search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id, int coarsening = 0);
             /** @brief Is node B a neighbor of node A? */
             bool isNeighbor(Node& a, Node& b, int dim, Direction dir);
             /** @brief Is node B a parent of node A? */
@@ -169,13 +188,15 @@ namespace DG
             /** @brief Construct a node and its children */
             void build(int id, int level);
             /** @brief DFS helper */
-            void dfs(std::function<void(Node&)> f, int id);
+            void dfs(std::function<void(Node&)> f, int id, int coarsening);
             /** @brief The nodes in the tree */
             std::vector<Node> tree;
             /** @brief Refinement function */
             std::function<Tuple<double,N>(Tuple<double,N>)> h;
             /** @brief The number of levels in the tree */
             int numLevels_;
+            /** @brief Coarsening strategy */
+            CoarseningStrategy coarseningStrategy_;
     };
 }
 

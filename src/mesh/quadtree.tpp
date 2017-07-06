@@ -41,7 +41,7 @@ namespace DG
     /** @brief Find the neighbors of a given node in a given dimension and
      *         direction */
     template<int N>
-    std::vector<int> Quadtree<N>::neighbors(int id, int dim, Direction dir)
+    std::vector<int> Quadtree<N>::neighbors(int id, int dim, Direction dir, int coarsening)
     {
         std::vector<int> v;
         auto cond = [&](Node& node) {
@@ -50,7 +50,7 @@ namespace DG
         auto accum = [&](Node& node) {
             v.push_back(node.id);
         };
-        search(cond, accum, 0);
+        search(cond, accum, 0, coarsening);
         return v;
     }
 
@@ -84,12 +84,12 @@ namespace DG
 
     /** @brief Search the tree with pruning based on a condition */
     template<int N>
-    void Quadtree<N>::search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id)
+    void Quadtree<N>::search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id, int coarsening)
     {
         if (cond(tree[id])) {
-            if (!tree[id].isLeaf()) {
+            if (!isLeaf(tree[id], coarsening)) {
                 for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
-                    search(cond, accum, *it);
+                    search(cond, accum, *it, coarsening);
                 }
             } else {
                 accum(tree[id]);
@@ -99,19 +99,19 @@ namespace DG
 
     /** @brief DFS helper */
     template<int N>
-    void Quadtree<N>::dfs(std::function<void(Node&)> f, int id)
+    void Quadtree<N>::dfs(std::function<void(Node&)> f, int id, int coarsening)
     {
         f(tree[id]);
-        if (!tree[id].isLeaf()) {
+        if (!isLeaf(tree[id], coarsening)) {
             for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
-                dfs(f, *it);
+                dfs(f, *it, coarsening);
             }
         }
     }
 
     /** @brief Apply f to the tree in a breadth-first order */
     template<int N>
-    void Quadtree<N>::bfs(std::function<void(Node&)> f)
+    void Quadtree<N>::bfs(std::function<void(Node&)> f, int coarsening)
     {
         std::queue<int> q;
         q.push(0);
@@ -120,7 +120,7 @@ namespace DG
             int id = q.front();
             f(tree[id]);
             q.pop();
-            if (!tree[id].isLeaf())
+            if (!isLeaf(tree[id], coarsening))
             {
                 for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
                     q.push(*it);
