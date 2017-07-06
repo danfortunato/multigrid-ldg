@@ -140,13 +140,18 @@ namespace DG
                 return numLevels_-1;
             }
 
-            const Node& operator[](int id)
+            Node& operator[](int id)
+            {
+                return tree[id];
+            }
+
+            const Node& operator[](int id) const
             {
                 return tree[id];
             }
 
             /** @brief Is this node a leaf for the given coarsening? */
-            bool isLeaf(Node& node, int coarsening = 0)
+            bool isLeaf(const Node& node, int coarsening = 0) const
             {
                 assert(coarsening>=0 && coarsening<numLevels_);
                 if (coarseningStrategy_ == kRapidCoarsening) {
@@ -158,11 +163,11 @@ namespace DG
             }
 
             /** @brief Return a list of elements at a given layer in the hierarchy */
-            std::vector<int> layer(int l)
+            std::vector<int> layer(int l) const
             {
                 assert(l>=0 && l<numLevels_);
                 std::vector<int> layer;
-                dfs([&](Node& node) {
+                dfs([&](const Node& node) {
                     if (isLeaf(node, l)) {
                         layer.push_back(node.id);
                     }
@@ -172,23 +177,26 @@ namespace DG
 
             /** @brief Find the neighbors of a given node in a given dimension
              *         and direction */
-            std::vector<int> neighbors(int id, int dim, Direction dir, int coarsening = 0);
+            std::vector<int> neighbors(int id, int dim, Direction dir, int coarsening = 0) const;
             /** @brief Apply f to the tree in a depth-first order */
-            void dfs(std::function<void(Node&)> f, int coarsening = 0) { dfs(f, 0, coarsening); }
+            void dfs(std::function<void(const Node&)> f, int coarsening = 0) const
+            {
+                dfs(f, 0, coarsening);
+            }
             /** @brief Apply f to the tree in a breadth-first order */
-            void bfs(std::function<void(Node&)> f, int coarsening = 0);
+            void bfs(std::function<void(const Node&)> f, int coarsening = 0) const;
             /** @brief Search the tree with pruning based on a condition */
-            void search(std::function<bool(Node&)> cond, std::function<void(Node&)> accum, int id, int coarsening = 0);
+            void search(std::function<bool(const Node&)> cond, std::function<void(const Node&)> accum, int id, int coarsening = 0) const;
             /** @brief Is node B a neighbor of node A? */
-            bool isNeighbor(Node& a, Node& b, int dim, Direction dir);
+            bool isNeighbor(const Node& a, const Node& b, int dim, Direction dir) const;
             /** @brief Is node B a parent of node A? */
-            bool isParent(Node& a, Node& b);
+            bool isParent(const Node& a, const Node& b) const;
 
         private:
             /** @brief Construct a node and its children */
             void build(int id, int level);
             /** @brief DFS helper */
-            void dfs(std::function<void(Node&)> f, int id, int coarsening);
+            void dfs(std::function<void(const Node&)> f, int id, int coarsening) const;
             /** @brief The nodes in the tree */
             std::vector<Node> tree;
             /** @brief Refinement function */
