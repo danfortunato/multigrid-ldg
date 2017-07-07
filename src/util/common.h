@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #define EIGEN_USE_MKL_ALL
+#define EIGEN_STACK_ALLOCATION_LIMIT 1000000
 #define MKL_ALIGN 64
 
 #include <Eigen/Dense>   // Eigen

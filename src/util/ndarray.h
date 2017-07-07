@@ -32,6 +32,10 @@ namespace DG
                 data_.fill(value);
             }
 
+            NDArray(const std::array<T,ipow(P,N)>& data) :
+                data_(data)
+            {}
+
             T& operator()(Tuple<int,N> index)
             {
                 return data_[flatten(index)];
@@ -63,7 +67,7 @@ namespace DG
             const_iterator end() const { return const_iterator(this,0); }
 
         private:
-            int flatten(Tuple<int,N> index)
+            int flatten(Tuple<int,N> index) const
             {
                 int lin = index[0];
                 for (int i=1; i<N; ++i) {
@@ -147,7 +151,7 @@ namespace DG
             const_iterator end() const { return const_iterator(this,0); }
 
         private:
-            int flatten(Tuple<int,N> index)
+            int flatten(Tuple<int,N> index) const
             {
                 int lin = index[0];
                 for (int i=1; i<N; ++i) {
