@@ -481,6 +481,23 @@ namespace DG
         blockMap_[index] = block;
     }
 
+    /** @brief Add to a block
+     *
+     *  @param[in] i : The row index
+     *  @param[in] j : The column index
+     *  @param[in] block : The block to add
+     */
+    template<int P>
+    void SparseBlockMatrixBuilder<P>::addToBlock(int i, int j, const Block& block)
+    {
+        Index index(i,j);
+        if (blockExists(i,j)) {
+            blockMap_[index] += block;
+        } else {
+            blockMap_[index] = block;
+        }
+    }
+
     /** @brief Check for a nonzero block at a specified position
      *
      *  @param[in] i : The row index

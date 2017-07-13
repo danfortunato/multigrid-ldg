@@ -23,7 +23,7 @@ namespace DG
         public:
 
             /** The type of the blocks */
-            typedef Eigen::Matrix<double,P,P,Eigen::RowMajor> Block;
+            typedef Mat<P,P> Block;
 
             /** Constructor */
             SparseBlockMatrix();
@@ -175,6 +175,9 @@ namespace DG
 
             /** Set a block */
             void setBlock(int i, int j, const Block& block);
+
+            /** Add to a block */
+            void addToBlock(int i, int j, const Block& block);
 
             /** Check if a block exists */
             bool blockExists(int i, int j);
