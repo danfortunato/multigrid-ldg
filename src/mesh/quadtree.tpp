@@ -79,7 +79,10 @@ namespace DG
     template<int N>
     bool Quadtree<N>::isParent(const Node& a, const Node& b) const
     {
-        return (a.cell.lower >= b.cell.lower).all() && (a.cell.upper <= b.cell.upper).all();
+        return (a.cell.lower >= b.cell.lower).all() &&
+               (a.cell.upper <= b.cell.upper).all() &&
+             !((a.cell.lower == b.cell.lower).all() &&
+               (a.cell.upper == b.cell.upper).all());
     }
 
     /** @brief Search the tree with pruning based on a condition */

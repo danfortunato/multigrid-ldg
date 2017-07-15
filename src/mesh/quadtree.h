@@ -83,6 +83,13 @@ namespace DG
         Tuple<double,N> lower, upper;
     };
 
+    template<int N>
+    bool operator==(const Cell<N>& cell1, const Cell<N>& cell2)
+    {
+        return (cell1.lower == cell2.lower).all() &&
+               (cell1.upper == cell2.upper).all();
+    }
+
     /** @brief An n-dimensional quadtree */
     template<int N>
     class Quadtree
@@ -111,7 +118,8 @@ namespace DG
 
             Quadtree(std::function<Tuple<double,N>(Tuple<double,N>)> h_) :
                 h(h_),
-                numLevels_(1)
+                numLevels_(1),
+                coarseningStrategy_(kEqualCoarsening)
             {
                 tree.push_back(Node(Cell<N>(),0,-1));
                 build(0,0);
@@ -119,7 +127,8 @@ namespace DG
 
             Quadtree(Cell<N> domain, std::function<Tuple<double,N>(Tuple<double,N>)> h_) :
                 h(h_),
-                numLevels_(1)
+                numLevels_(1),
+                coarseningStrategy_(kEqualCoarsening)
             {
                 tree.push_back(Node(domain,0,-1));
                 build(0,0);
