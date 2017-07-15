@@ -168,7 +168,15 @@ namespace DG
                 return index_;
             }
 
-            int operator()(int i) const
+            int& operator()(int i)
+            {
+                if (i < 0 || i >= N) {
+                    throw std::out_of_range("Index is out of range.");
+                }
+                return index_[i];
+            }
+
+            const int& operator()(int i) const
             {
                 if (i < 0 || i >= N) {
                     throw std::out_of_range("Index is out of range.");
