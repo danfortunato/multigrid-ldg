@@ -32,6 +32,53 @@ namespace DG
         static const Mat<P,P> diff;
     };
 
+    template<int P>
+    struct LagrangePoly
+    {
+        /** The Lagrange polynomial denominators */
+        static const double denom[P];
+        /** Evaluate the P 1-D Lagrange polynomials at the point x */
+        static Vec<P> eval(const double& x)
+        {
+            Vec<P> lagrange;
+            // First compute the products to the left of the split
+            double alpha = 1;
+            lagrange[0] = denom[0];
+            for (int i=0; i<P-1; ++i) {
+                alpha *= x - GaussLobatto<P>::nodes[i];
+                lagrange[i+1] = alpha * denom[i+1];
+            }
+            // Now compute the products to the right of the split
+            double beta = 1;
+            for (int i=P-1; i>0; --i) {
+                beta *= x - GaussLobatto<P>::nodes[i];
+                lagrange[i-1] *= beta;
+            }
+            return lagrange;
+        }
+        /** Evaluate the P^N N-D Lagrange polynomials at the coordinate x */
+        template<int N>
+        static KronVec<P,N> eval(const Tuple<double,N>& x)
+        {
+            // Precompute the P 1-D Lagrange polynomials evaluated at each
+            // component of x
+            Mat<P,N> g;
+            for (int j=0; j<N; ++j) {
+                g.col(j) = eval(x[j]);
+            }
+            // Tensor product the components together
+            KronVec<P,N> lagrange;
+            for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                int i = it.linearIndex();
+                lagrange(i) = 1;
+                for (int j=0; j<N; ++j) {
+                    lagrange(i) *= g(it(j),j);
+                }
+            }
+            return lagrange;
+        }
+    };
+
     /** @brief Quadrature nodes and weights on [0,1] */
     template<int Q>
     struct Quadrature
@@ -48,8 +95,8 @@ namespace DG
     {
         KronMat<P,N> M;
         for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+            int i = it.linearIndex();
             for (RangeIterator<P,N> jt; jt != Range<P,N>::end(); ++jt) {
-                int i = it.linearIndex();
                 int j = jt.linearIndex();
                 M(i,j) = 1.0;
                 for (int k=0; k<N; ++k) {
@@ -93,6 +140,13 @@ namespace DG
     template<> const double GaussLobatto<4>::nodes[] = {0, 0.27639320225002103035908263312687, 0.72360679774997896964091736687313, 1.0000000000000000000000000000000};
     template<> const double GaussLobatto<5>::nodes[] = {0, 0.17267316464601142810085377187657, 0.50000000000000000000000000000000, 0.82732683535398857189914622812343, 1.0000000000000000000000000000000};
     template<> const double GaussLobatto<6>::nodes[] = {0, 0.11747233803526765357449851302033, 0.35738424175967745184292450297956, 0.64261575824032254815707549702044, 0.88252766196473234642550148697967, 1.0000000000000000000000000000000};
+
+    template<> const double LagrangePoly<1>::denom[] = {1.0000000000000000000000000000000};
+    template<> const double LagrangePoly<2>::denom[] = {-1.0000000000000000000000000000000, 1.0000000000000000000000000000000};
+    template<> const double LagrangePoly<3>::denom[] = {2.0000000000000000000000000000000, -4.0000000000000000000000000000000, 2.0000000000000000000000000000000};
+    template<> const double LagrangePoly<4>::denom[] = {-5.0000000000000000000000000000000, 11.180339887498948482045868343656, -11.180339887498948482045868343656, 5.0000000000000000000000000000000};
+    template<> const double LagrangePoly<5>::denom[] = {14.000000000000000000000000000000, -32.666666666666666666666666666667, 37.333333333333333333333333333333, -32.666666666666666666666666666667, 14.000000000000000000000000000000};
+    template<> const double LagrangePoly<6>::denom[] = {-42.000000000000000000000000000000, 100.07221064631794721756762446717, -121.16745708464368404487465576678, 121.16745708464368404487465576678, -100.07221064631794721756762446717, 42.000000000000000000000000000000};
 
     // Quadrature nodes
     template<> const double Quadrature<1>::nodes[]  = {0.50000000000000000000000000000000};
