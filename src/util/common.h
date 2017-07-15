@@ -11,6 +11,9 @@
 
 namespace DG
 {
+    /** @brief The number of quadrature points to use */
+    const int Q = 10;
+
     /** @brief Compile-time power function */
     template<typename T>
     inline constexpr T ipow(const T base, unsigned const exponent)
@@ -22,10 +25,6 @@ namespace DG
     template<int M, int N>
     using Mat = Eigen::Matrix<double,M,N,Eigen::RowMajor>;
 
-    /** Compile-time-sized diagonal matrix */
-    template<int N>
-    using DiagMat = Eigen::DiagonalMatrix<double,N>;
-
     /** Compile-time-sized vector */
     template<int N>
     using Vec = Eigen::Matrix<double,N,1>;
@@ -34,6 +33,10 @@ namespace DG
     template<typename T, int N>
     using Tuple = Eigen::Array<T,N,1>;
 
+    /** Compile-time-sized diagonal matrix */
+    template<int N>
+    using Diag = Eigen::DiagonalMatrix<double,N>;
+
     /** Compile-time-sized tensor product matrix */
     template<int P, int N>
     using KronMat = Eigen::Matrix<double,ipow(P,N),ipow(P,N),Eigen::RowMajor>;
@@ -41,6 +44,18 @@ namespace DG
     /** Compile-time-sized tensor product vector */
     template<int P, int N>
     using KronVec = Eigen::Matrix<double,ipow(P,N),1>;
+
+    /** Compile-time-sized tensor product diagonal matrix */
+    template<int P, int N>
+    using KronDiag = Eigen::DiagonalMatrix<double,ipow(P,N)>;
+
+    /** Compile-time-sized slicing matrix */
+    template<int P, int N>
+    using SliceMat = Eigen::Matrix<double,ipow(P,N-1),ipow(P,N),Eigen::RowMajor>;
+
+    /** Compile-time-sized evaluation matrix */
+    template<int P, int Q, int N>
+    using EvalMat = Eigen::Matrix<double,ipow(Q,N-1),ipow(P,N),Eigen::RowMajor>;
 
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>
