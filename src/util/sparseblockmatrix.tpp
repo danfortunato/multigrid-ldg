@@ -1,4 +1,6 @@
 #include <vector>
+#include <fstream>
+#include <limits>
 
 namespace DG
 {
@@ -558,5 +560,29 @@ namespace DG
         m_ = m;
         n_ = n;
         blockMap_.clear();
+    }
+    /** @brief Write the matrix to a file (in Matrix Market format)
+     *
+     *  @param[in] file : The filename
+     */
+    template<int P>
+    void SparseBlockMatrixBuilder<P>::write(const std::string& file)
+    {
+        std::ofstream ofs(file);
+        ofs.precision(std::numeric_limits<double>::max_digits10);
+
+        ofs << "%%MatrixMarket matrix coordinate real general" << std::endl;
+        ofs << blockRows()*P << " " << blockCols()*P << " " << nnz() << std::endl;
+        for (auto it = blockMap_.begin(); it != blockMap_.end(); ++it) {
+            int bi = it->first.i * P;
+            int bj = it->first.j * P;
+            for (int i=0; i<P; ++i) {
+                for (int j=0; j<P; ++j) {
+                    ofs << bi+i+1 << " " << bj+j+1 << " " << it->second(i,j) << std::endl;
+                }
+            }
+        }
+
+        ofs.close();
     }
 }

@@ -3,6 +3,7 @@
 
 #include <unordered_map> // std::unordered_map
 #include <stdexcept>     // std::out_of_range
+#include <string>        // std::string
 #include "common.h"
 
 namespace DG
@@ -187,6 +188,9 @@ namespace DG
 
             /** Reset */
             void reset(int m, int n);
+
+            /** Write the matrix to a file (in Matrix Market format) */
+            void write(const std::string& file);
 
         private:
 
