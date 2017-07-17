@@ -40,19 +40,19 @@ namespace DG
             upper(upper_)
         {}
 
-        Tuple<double,N> width() {
+        Tuple<double,N> width() const {
             return upper-lower;
         }
 
         /** @brief Compute the width of the cell in the dimension d */
-        double width(int d) {
+        double width(int d) const {
             if (d >= N) {
                 throw std::invalid_argument("Requested dimension too large.");
             }
             return upper[d]-lower[d];
         }
 
-        double maxWidth() {
+        double maxWidth() const {
             double max = width(0);
             for (int i=1; i<N; ++i) {
                 if (width(i) > max) {
@@ -62,7 +62,7 @@ namespace DG
             return max;
         }
 
-        double minWidth() {
+        double minWidth() const {
             double min = width(0);
             for (int i=1; i<N; ++i) {
                 if (width(i) < min) {
@@ -73,7 +73,7 @@ namespace DG
         }
 
         /** @brief Compute the volume of the cell */
-        double volume() {
+        double volume() const {
             double v = 1;
             for (int i=0; i<N; ++i) { v *= width(i); }
             return v;
