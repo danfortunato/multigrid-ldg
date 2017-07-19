@@ -1,3 +1,7 @@
+#include <functional>
+#include <cmath>
+#include <iostream>
+#include "common.h"
 #include "quadtree.h"
 #include "mesh.h"
 #include "function.h"
@@ -6,20 +10,27 @@
 
 int main()
 {
-    const int p = 3;   // Polynomial order
-    const int N = 2;   // Dimension
-    const int P = p+1; // Nodes per dimension
+    const int p = 2;    // Polynomial order
+    const int N = 2;    // Dimension
+    const int P = p+1;  // Nodes per dimension
+    double tau0 = 0;    // Interior penalty parameter
+    double tauD = 1000; // Dirichlet penalty parameter
 
-    DG::Quadtree<P,N> qt(3);
+    std::function<DG::Tuple<double,N>(DG::Tuple<double,N>)> h = [](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(0.125); };
+    DG::Quadtree<N> qt(h);
     DG::Mesh<P,N> mesh(qt);
-    //DG::Cartesian<P,N> mesh(32,32);
 
-    DG::Function<P,N> f(mesh);
-    auto bc = DG::BoundaryConditions<P,N>::Dirichlet(mesh);
+    auto bcs = DG::BoundaryConditions<P,N>::Dirichlet(mesh);
+    DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
+    poisson.dump();
 
-    f = 1;
-    DG::LDGPoisson<P,N> poisson(mesh, bc);
-    DG::Function<P,N> u = poisson.solve(f);
+    DG::Function<P,N> u(mesh, [](DG::Tuple<double,N> x) { return sin(M_PI*x[0])*sin(M_PI*x[1]); } );
+    DG::Function<P,N> f(mesh, [](DG::Tuple<double,N> x) { return 2*M_PI*M_PI*sin(M_PI*x[0])*sin(M_PI*x[1]); } );
+
+    u.write("u.fun");
+    f.write("f.fun");
+
+    //DG::Fun<P,N> u = poisson.solve(f);
 
     return 0;
 }
