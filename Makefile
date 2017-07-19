@@ -2,7 +2,7 @@ MKLROOT = /opt/intel/mkl
 
 CC     = gcc-7
 CXX    = g++-7
-CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -g -std=c++14 -O3 -m64
+CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -g -std=c++17 -O3 -m64
 INCDIR = -I.. -I/opt/intel/mkl/include
 LIBDIR = -L$(MKLROOT)/lib -Wl,-rpath,$(MKLROOT)/lib
 LIB    = -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
