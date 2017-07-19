@@ -1,8 +1,9 @@
 #ifndef BOUNDARY_CONDITIONS_H
 #define BOUNDARY_CONDITIONS_H
 
+#include <unordered_map>
+#include <functional>
 #include "mesh.h"
-#include "function.h"
 
 namespace DG
 {
@@ -20,10 +21,10 @@ namespace DG
     template<int P, int N>
     struct BoundaryCondition
     {
-        BoundaryCondition(BoundaryType type_) : type(type_), f(0) {}
-        BoundaryCondition(BoundaryType type_, Function<P,N> f_) : type(type_), f(f_) {}
+        BoundaryCondition(BoundaryType type_, double value = 0) : type(type_), f([value](Tuple<double,N>) { return value; }) {}
+        BoundaryCondition(BoundaryType type_, std::function<double(Tuple<double,N>)> f_) : type(type_), f(f_) {}
         BoundaryType type;
-        Function<P,N> f;
+        std::function<double(Tuple<double,N>)> f;
     };
 
     /** @brief A collection of boundary conditions for a mesh */
@@ -37,45 +38,45 @@ namespace DG
         BoundaryConditions(Mesh<P,N>& mesh_, BoundaryCondition<P,N> bc) :
             mesh(mesh_)
         {
-            for (int i = 0; i < mesh.boundaryIndices.size(); ++i) {
-                bcmap.emplace(mesh.boundaryIndices[i], bc);
+            for (int bnd : mesh.boundaryIndices) {
+                bcmap.emplace(bnd, bc);
             }
         }
 
         /** Construct zero Dirichlet conditions for a mesh */
-        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh_)
+        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh_, double value = 0)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kDirichlet));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kDirichlet, value));
         }
 
         /** Construct given Dirichlet conditions for a mesh */
-        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh, Function<P,N> f)
+        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kDirichlet, f));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kDirichlet, f));
         }
 
         /** Construct zero Neumann conditions for a mesh */
-        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh)
+        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh_, double value = 0)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kNeumann));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kNeumann, value));
         }
 
         /** Construct given Neumann conditions for a mesh */
-        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh, Function<P,N> f)
+        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kNeumann, f));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kNeumann, f));
         }
 
         /** Construct zero Robin conditions for a mesh */
-        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh)
+        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh_, double value = 0)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kRobin));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kRobin, value));
         }
 
         /** Construct given Robin conditions for a mesh */
-        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh, Function<P,N> f)
+        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
-            return BoundaryConditions<P,N>(mesh, BoundaryCondition<P,N>(kRobin, f));
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kRobin, f));
         }
         
         /** The mesh */
@@ -83,7 +84,7 @@ namespace DG
 
         /** A mapping between the geometric boundary indices and the boundary
          *  condition to apply on each geometric boundary */
-        std::map<int, BoundaryCondition> bcmap;
+        std::unordered_map<int, BoundaryCondition<P,N>> bcmap;
     };
 }
 
