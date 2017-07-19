@@ -3,10 +3,9 @@
 
 #include <vector>
 #include <functional>
-#include <iosfwd>
 #include <unordered_map>
 #include "common.h"
-#include "fun.h"
+#include "function.h"
 #include "quadtree.h"
 #include "master.h"
 #include "ndarray.h"
@@ -31,51 +30,56 @@ namespace DG
                                     (cell.lower[dim] == cell.upper[dim]));
             assert(codimension_one);
 
-            Cell<N> lcell = mesh->elements[left].cell;
-            Cell<N> rcell = mesh->elements[right].cell;
-            lcell.lower[dim] = lcell.upper[dim];
-            rcell.upper[dim] = rcell.lower[dim];
+            // Boundary faces are canonical
+            canonical = true;
+            if (right > 0) {
+                Cell<N> lcell = mesh->elements[left].cell;
+                Cell<N> rcell = mesh->elements[right].cell;
+                lcell.lower[dim] = lcell.upper[dim];
+                rcell.upper[dim] = rcell.lower[dim];
 
-            // Determine whether this is a canonical face
-            canonical = (right > 0) ? (lcell == rcell) : true;
+                // Determine whether this is a canonical face
+                canonical = lcell == rcell;
 
-            if (!canonical) {
-                // Compute and store the quadrature points for this face with
-                // respect to the local coordinates of the left and right elements
+                if (!canonical) {
+                    // Compute and store the quadrature points for this face with
+                    // respect to the local coordinates of the left and right elements
 
-                // Let f be the mapping from the element's coordinate system to
-                // to [0,1]^N
-                Tuple<double,N> al = cell.lower - lcell.lower;
-                Tuple<double,N> bl = cell.upper - lcell.lower;
-                Tuple<double,N> ar = cell.lower - rcell.lower;
-                Tuple<double,N> br = cell.upper - rcell.lower;
-                for (int i=0; i<N; ++i) {
-                    if (i!=dim) {
-                        al[i] /= lcell.width(i);
-                        bl[i] /= lcell.width(i);
-                        ar[i] /= rcell.width(i);
-                        br[i] /= rcell.width(i);
+                    // Let f be the mapping from the element's coordinate system to
+                    // to [0,1]^N
+                    Tuple<double,N> al = cell.lower - lcell.lower;
+                    Tuple<double,N> bl = cell.upper - lcell.lower;
+                    Tuple<double,N> ar = cell.lower - rcell.lower;
+                    Tuple<double,N> br = cell.upper - rcell.lower;
+                    for (int i=0; i<N; ++i) {
+                        if (i!=dim) {
+                            al[i] /= lcell.width(i);
+                            bl[i] /= lcell.width(i);
+                            ar[i] /= rcell.width(i);
+                            br[i] /= rcell.width(i);
+                        }
                     }
-                }
-                // Create the coordinate tensor product
-                for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
-                    Tuple<double,N> tl, tr;
-                    for (int k=0; k<N; ++k) {
-                        double x = Quadrature<Q>::nodes[it(k)];
-                        tl[k] = al[k] + (bl[k]-al[k])*x;
-                        tr[k] = ar[k] + (br[k]-ar[k])*x;
+                    // Create the coordinate tensor product
+                    for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                        Tuple<double,N> tl, tr;
+                        for (int k=0; k<N-1; ++k) {
+                            double x = Quadrature<Q>::nodes[it(k)];
+                            int kk = k + (k>=dim);
+                            tl[kk] = al[kk] + (bl[kk]-al[kk])*x;
+                            tr[kk] = ar[kk] + (br[kk]-ar[kk])*x;
+                        }
+                        // Make degenerate coordinate match reference element
+                        tl[dim] = 1;
+                        tr[dim] = 0;
+                        xl(it.index()) = tl;
+                        xr(it.index()) = tr;
                     }
-                    // Make degenerate coordinate match reference element
-                    tl[dim] = 1;
-                    tr[dim] = 0;
-                    xl(it.index()) = tl;
-                    xr(it.index()) = tr;
                 }
             }
         }
 
         /** The area of the face */
-        double area()
+        double area() const
         {
             double a = 1;
             for (int i=0; i<N; ++i) {
@@ -87,10 +91,25 @@ namespace DG
         }
 
         /** The mass matrix for this face */
-        const KronMat<P,N-1> mass()
+        KronMat<P,N-1> mass() const
         {
             double jac = area();
             return Master<P,N-1>::mass * jac;
+        }
+
+        bool interiorQ() const
+        {
+            return right > 0;
+        }
+
+        bool boundaryQ() const
+        {
+            return right < 0;
+        }
+
+        int boundary() const
+        {
+            return boundaryQ() ? right : 0;
         }
 
         /** A pointer to the mesh */
@@ -126,25 +145,32 @@ namespace DG
         {}
 
         /** The volume of the element */
-        double volume()
+        double volume() const
         {
             return cell.volume();
         }
 
         /** The mass matrix for the element */
-        const KronMat<P,N> mass()
+        KronMat<P,N> mass() const
         {
             double jac = volume();
             return Master<P,N>::mass * jac;
         }
 
+        /** The inverse mass matrix for the element */
+        KronMat<P,N> invmass() const
+        {
+            double jac = 1/volume();
+            return Master<P,N>::invmass * jac;
+        }
+
         /** The i-th node in the element */
-        Tuple<double,N> dgnodes(Tuple<int,N> index)
+        Tuple<double,N> dgnodes(Tuple<int,N> index) const
         {
             assert((0 <= index).all() && (index < P).all());
             Tuple<double,N> node;
             for (int i=0; i<N; ++i) {
-                node[i] = GaussLobatto<P>::dgnodes[index[i]];
+                node[i] = GaussLobatto<P>::nodes[index[i]];
             }
             return cell.lower + cell.width() * node;
         }
@@ -169,6 +195,13 @@ namespace DG
         /** @brief Construct a mesh from the finest level of a quadtree */
         Mesh(const Quadtree<N>& qt, int coarsening = 0)
         {
+            // Initialize geometric boundaries
+            for (int i=0; i<N; ++i) {
+                int index = 2*i+1;
+                boundaryIndices.push_back(-index);
+                boundaryIndices.push_back(-(index+1));
+            }
+
             // Get the global IDs of the elements in the specified layer
             std::vector<int> ids = qt.layer(coarsening);
 
@@ -201,7 +234,7 @@ namespace DG
                             if (dir == kLeft) upper[i] = lower[i]; else lower[i] = upper[i];
                             Cell<N> fcell(lower, upper);
                             // Compute the geometric boundary index
-                            int bnd = getBoundaryIndex(fcell);
+                            int bnd = findBoundary(fcell, dir, i);
                             // Create the face
                             Face<P,N> face(*this, elem.lid, bnd, i, outward * normal, fcell);
                             faces.push_back(face);
@@ -233,17 +266,14 @@ namespace DG
                 }
             }
 
-            // Put the boundary faces last
-            std::sort(faces.begin(), faces.end(), [](Face<P,N>& i, Face<P,N>& j) { return i.right > j.right; } );
-
             ne = elements.size();
             nf = faces.size();
         }
 
         /** @brief Compute the geometric boundary index for a face */
-        int getBoundaryIndex(Cell<N> fcell)
+        int findBoundary(Cell<N> fcell, Direction dir, int dim)
         {
-            return -1;
+            return boundaryIndices[2*dim + (dir==kRight)];
         }
 
         /** @brief The polynomial order */
