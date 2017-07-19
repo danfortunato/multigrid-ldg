@@ -508,7 +508,7 @@ namespace DG
     template<int P>
     bool SparseBlockMatrixBuilder<P>::blockExists(int i, int j)
     {
-        if (i >= m_ || j >= n_) {
+        if (i < 0 || i >= m_ || j < 0 || j >= n_) {
             throw std::out_of_range("Block index is out of range");
         }
         Index index(i,j);
