@@ -23,7 +23,7 @@ SRC  = $(foreach sdir,$(SRCDIR), $(wildcard $(sdir)/*.cpp))
 OBJ  = $(patsubst $(SRCROOT)/%.cpp,build/%.o,$(SRC))
 
 headers = common.h sparseblockmatrix.h element.h master.h mesh.h quadtree.h function.h ldgpoisson.h
-EXECS  = matrix_tests mesh_tests
+EXECS  = matrix_tests dg_tests
 EXECS := $(addprefix $(BINDIR)/,$(EXECS))
 
 define cc-command
@@ -47,7 +47,7 @@ executables: $(EXECS)
 $(BINDIR)/matrix_tests: $(TESTDIR)/matrix_tests.cpp $(OBJ)
 	$(cc-command)
 
-$(BINDIR)/mesh_tests: $(TESTDIR)/mesh_tests.cpp $(OBJ)
+$(BINDIR)/dg_tests: $(TESTDIR)/dg_tests.cpp $(OBJ)
 	$(cc-command)
 
 checkdirs: $(BINDIR) $(BUILDDIR)
