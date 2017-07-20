@@ -32,7 +32,7 @@ namespace DG
 
             // Boundary faces are canonical
             canonical = true;
-            if (right > 0) {
+            if (interiorQ()) {
                 Cell<N> lcell = mesh->elements[left].cell;
                 Cell<N> rcell = mesh->elements[right].cell;
                 lcell.lower[dim] = lcell.upper[dim];
@@ -99,7 +99,7 @@ namespace DG
 
         bool interiorQ() const
         {
-            return right > 0;
+            return right >= 0;
         }
 
         bool boundaryQ() const
