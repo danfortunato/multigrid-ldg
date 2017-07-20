@@ -276,6 +276,66 @@ namespace DG
             return boundaryIndices[2*dim + (dir==kRight)];
         }
 
+        /** @brief Compute the lifting matrices for a given face
+         *
+         *  @param[in]  f  : The face to lift from
+         *  @param[out] LL : Trial from the left, test from the left
+         *  @param[out] RR : Trial from the right, test from the right
+         *  @param[out] RL : Trial from the right, test from the left
+         */
+        void lift(const Face<P,N>& f, KronMat<P,N>& LL, KronMat<P,N>& RR, KronMat<P,N>& RL) const
+        {
+            // Can we use the 1D mass matrix?
+            if (f.canonical) {
+
+                // Compute slicing matrices
+                SliceMat<P,N> slice_l, slice_r;
+                slice_l.setZero();
+                slice_r.setZero();
+                // Loop over the rows of the slicing matrix
+                for (RangeIterator<P,N-1> it; it != Range<P,N-1>::end(); ++it) {
+                    int i = it.linearIndex();
+                    // Copy it into jt, leaving space for the extra dimension
+                    RangeIterator<P,N> jt;
+                    for (int k=0; k<f.dim; ++k) jt(k) = it(k);
+                    for (int k=f.dim; k<N-1; ++k) jt(k+1) = it(k);
+                    // The face nodes for the left element lie on its right side
+                    jt(f.dim) = (f.normal[f.dim] > 0) ? P-1 : 0;
+                    int j = jt.linearIndex();
+                    slice_l(i,j) = 1;
+                    // The face nodes for the right element lie on its left side
+                    jt(f.dim) = (f.normal[f.dim] > 0) ? 0 : P-1;
+                    j = jt.linearIndex();
+                    slice_r(i,j) = 1;
+                }
+
+                LL = slice_l.transpose() * f.mass() * slice_l;
+                RR = slice_r.transpose() * f.mass() * slice_r;
+                RL = slice_r.transpose() * f.mass() * slice_l;
+
+            } else {
+
+                // Compute matrices to evaluate at quadrature points
+                EvalMat<P,Q,N> phi_l, phi_r;
+                KronVec<Q,N-1> w;
+                for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                    int i = it.linearIndex();
+                    phi_l.row(i) = LagrangePoly<P>::eval(f.xl(it.index()));
+                    phi_r.row(i) = LagrangePoly<P>::eval(f.xr(it.index()));
+                    w[i] = 1;
+                    for (int k=0; k<N-1; ++k) {
+                        w[i] *= Quadrature<Q>::weights[it(k)];
+                    }
+                }
+                // Scale the quadrature weights according to the area of the face
+                w *= f.area();
+
+                LL = phi_l.transpose() * w.asDiagonal() * phi_l;
+                RR = phi_r.transpose() * w.asDiagonal() * phi_r;
+                RL = phi_r.transpose() * w.asDiagonal() * phi_l;
+            }
+        }
+
         /** @brief The polynomial order */
         static const int p = P-1;
         /** @brief The number of nodes per element */
