@@ -26,9 +26,9 @@ namespace DG
             cell(cell_)
         {
             // Make sure this face is actually codimension one in the specified dimension
-            bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
-                                    (cell.lower[dim] == cell.upper[dim]));
-            assert(codimension_one);
+            // bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
+            //                         (cell.lower[dim] == cell.upper[dim]));
+            //assert(codimension_one);
 
             // Boundary faces are canonical
             canonical = true;
@@ -252,7 +252,7 @@ namespace DG
                                     // Compute the bounding box of the face
                                     Tuple<double,N> lower = elements[left].cell.lower.max(elements[right].cell.lower);
                                     Tuple<double,N> upper = elements[left].cell.upper.min(elements[right].cell.upper);
-                                    assert(elements[left].cell.upper[i] == elements[right].cell.lower[i]);
+                                    //assert(elements[left].cell.upper[i] == elements[right].cell.lower[i]);
                                     lower[i] = elements[right].cell.lower[i]; // = These should be equal
                                     upper[i] = elements[left].cell.upper[i];  // =
                                     Cell<N> fcell(lower, upper);

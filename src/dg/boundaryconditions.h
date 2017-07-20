@@ -11,7 +11,8 @@ namespace DG
     {
         kDirichlet,
         kNeumann,
-        kRobin
+        kRobin,
+        kPeriodic
     };
 
     /** @brief A boundary condition
@@ -77,6 +78,12 @@ namespace DG
         static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kRobin, f));
+        }
+
+        /** Construct periodic conditions for a mesh */
+        static BoundaryConditions<P,N> Periodic(Mesh<P,N>& mesh_)
+        {
+            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kPeriodic));
         }
         
         /** The mesh */

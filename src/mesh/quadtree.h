@@ -116,19 +116,21 @@ namespace DG
                 NDArray<int,2,N> children;
             };
 
-            Quadtree(std::function<Tuple<double,N>(Tuple<double,N>)> h_) :
+            Quadtree(std::function<Tuple<double,N>(Tuple<double,N>)> h_, bool periodic_ = false) :
                 h(h_),
                 numLevels_(1),
-                coarseningStrategy_(kEqualCoarsening)
+                coarseningStrategy_(kEqualCoarsening),
+                periodic(periodic_)
             {
                 tree.push_back(Node(Cell<N>(),0,-1));
                 build(0,0);
             }
 
-            Quadtree(Cell<N> domain, std::function<Tuple<double,N>(Tuple<double,N>)> h_) :
+            Quadtree(Cell<N> domain, std::function<Tuple<double,N>(Tuple<double,N>)> h_, bool periodic_ = false) :
                 h(h_),
                 numLevels_(1),
-                coarseningStrategy_(kEqualCoarsening)
+                coarseningStrategy_(kEqualCoarsening),
+                periodic(periodic_)
             {
                 tree.push_back(Node(domain,0,-1));
                 build(0,0);
@@ -214,6 +216,8 @@ namespace DG
             int numLevels_;
             /** @brief Coarsening strategy */
             CoarseningStrategy coarseningStrategy_;
+            /** @brief Is this quadtree periodic? */
+            bool periodic;
     };
 }
 

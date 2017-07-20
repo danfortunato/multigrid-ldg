@@ -61,6 +61,17 @@ namespace DG
         // In the same plane?
         double planeA = (dir == kLeft) ? a.cell.lower[dim] : a.cell.upper[dim];
         double planeB = (dir == kLeft) ? b.cell.upper[dim] : b.cell.lower[dim];
+
+        // Fix the plane computation if periodic
+        if (periodic) {
+            double doml = tree[0].cell.lower[dim];
+            double domu = tree[0].cell.upper[dim];
+            if ((dir == kLeft  && planeA == doml && planeB == domu) ||
+                (dir == kRight && planeA == domu && planeB == doml)) {
+                planeB = planeA;
+            }
+        } 
+
         if (planeA != planeB) {
             return false;
         } else {
