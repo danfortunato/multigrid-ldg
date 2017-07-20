@@ -279,7 +279,7 @@ DGPlot[f_DGFunction, opts:OptionsPattern[ListPlot3D]] := Module[{int},
 ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*DGConvergencePlot*)
 
 
@@ -287,27 +287,28 @@ DGConvergencePlot[hs:{__?NumericQ}] := DGConvergencePlot[hs, DGConvergence[hs]]
 
 
 DGConvergencePlot[hs:{__?NumericQ}, err:{__?NumericQ}] := Module[
-	{data, fit, x, slope, domain, range, xticks, format, relabel},
+	{data, fit, x, slope, domain, range, xticks, yticks, format, relabel},
 	
 	data = Transpose[{hs, err}];
-	fit = Fit[Log[data],{1,x},x];
+	fit = Fit[Log[data[[-3;;]]],{1,x},x];
 	slope = fit // Last // First;
 	fit = fit /. x->Log[x] // Exp;
-	domain = MinMax[hs] + {-1,1}*MinMax[hs]/2;
-	range = {Automatic, 1};
 	
-	xticks = Transpose[{hs, Superscript[2,#]&/@Round@Log2[hs]}];
-	format = Replace[#, n_?NumericQ|NumberForm[n_,_]:>Superscript[10,Round@Log10@n]]&;
-	relabel = # /. CST_Charting`ScaledTicks:>(MapAt[format, CST[##], {All,2}]&)&;
+	xticks = Transpose[{hs, Superscript[2,#]& /@ Round@Log2[hs]}];
+	yticks = Range@@{Floor[#1],Ceiling[#2]}& @@ MinMax@Log10[err] // Reverse;
+	yticks = {10^#, Superscript[10,#]}& /@ yticks;
+	
+	domain = MinMax[hs] + {-1,1}*MinMax[hs]/2;
+	range = MinMax[yticks[[All,1]]] + {-1,1}*MinMax[yticks[[All,1]]]/2;
 
 	Show[
 		LogLogPlot[fit, {x, First[domain], Last[domain]},
-			PlotRange -> {domain,range},
+			PlotRange -> {domain, range},
 			PlotLegends -> {NumberForm[slope,3]},
 			Frame -> True,
 			PlotRangePadding -> False,
-			FrameTicks -> {Automatic, {xticks, Automatic}}
-		] // relabel,
+			FrameTicks -> {{yticks, Automatic}, {xticks, Automatic}}
+		],
 		ListPlot[Log[data],
 			PlotMarkers -> {Automatic, 12},
 			PlotRangePadding -> False
