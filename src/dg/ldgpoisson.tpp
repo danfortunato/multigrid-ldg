@@ -93,35 +93,36 @@ namespace DG
                 T_builder.addToBlock(f.right, f.left,  -tau0 * RL);
                 T_builder.addToBlock(f.left,  f.right, -tau0 * RL.transpose());
             } else {
-                switch (bcs.bcmap.at(f.boundary()).type) {
 
+                // Evaluate the boundary condition at the quadrature points
+                const auto& bcfun = bcs.bcmap.at(f.boundary()).f;
+                KronVec<Q,N-1> bc;
+                for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                    Tuple<double,N> q;
+                    for (int k=0; k<N-1; ++k) {
+                        double x = Quadrature<Q>::nodes[it(k)];
+                        int kk = k + (k>=f.dim);
+                        q[kk] = f.cell.lower[kk] + f.cell.width(kk)*x;
+                    }
+                    q[f.dim] = f.cell.lower[f.dim];
+                    int i = it.linearIndex();
+                    bc[i] = bcfun(q);
+                }
+
+                switch (bcs.bcmap.at(f.boundary()).type) {
                     case kDirichlet:
-                    {
                         // Lifting operator
                         G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
                         // Penalty terms
                         T_builder.addToBlock(f.left, f.left, tauD * LL);
+                        // RHS contributions
+                        Jg.segment<npl>(npl*(N*f.left+f.dim)) += n * MinvL * L * bc;
+                        aD.segment<npl>(npl*f.left) += tauD * L * bc;
                         break;
-                    }
                     case kNeumann:
-                    {
-                        const auto& hfun = bcs.bcmap.at(f.boundary()).f;
-                        // Evaluate hfun at the quadrature points
-                        KronVec<Q,N-1> h;
-                        for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
-                            Tuple<double,N> q;
-                            for (int k=0; k<N-1; ++k) {
-                                double x = Quadrature<Q>::nodes[it(k)];
-                                int kk = k + (k>=f.dim);
-                                q[kk] = f.cell.lower[kk] + f.cell.width(kk)*x;
-                            }
-                            q[f.dim] = f.cell.lower[f.dim];
-                            int i = it.linearIndex();
-                            h[i] = hfun(q);
-                        }
-                        Jh.segment<npl>(npl*f.left) += MinvL * L * h;
+                        // RHS contribution
+                        Jh.segment<npl>(npl*f.left) += MinvL * L * bc;
                         break;
-                    }
                     default:
                         throw std::invalid_argument("Unknown boundary condition.");
                 }

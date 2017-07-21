@@ -21,7 +21,9 @@ namespace DG
                 bcs(bcs_),
                 tau0(tau0_),
                 tauD(tauD_),
-                Jh(Vector::Zero(mesh->ne * npl))
+                Jg(Vector::Zero(mesh->ne * npl * N)),
+                Jh(Vector::Zero(mesh->ne * npl)),
+                aD(Vector::Zero(mesh->ne * npl))
             {
                 // Reset the builders to be the correct size
                 M_builder.reset(mesh->ne, mesh->ne);
@@ -54,12 +56,31 @@ namespace DG
                 G_builder.write("G.mtx");
                 T_builder.write("T.mtx");
 
-                std::ofstream ofs("Jh.mtx");
+                std::ofstream ofs;
+                ofs.open("Jg.mtx");
+                ofs.precision(std::numeric_limits<double>::max_digits10);
+                ofs << "%%MatrixMarket matrix array real general" << std::endl;
+                ofs << Jg.size() << " " << 1 << std::endl;
+                for (int i=0; i < Jg.size(); ++i) {
+                    ofs << Jg[i] << std::endl;
+                }
+                ofs.close();
+
+                ofs.open("Jh.mtx");
                 ofs.precision(std::numeric_limits<double>::max_digits10);
                 ofs << "%%MatrixMarket matrix array real general" << std::endl;
                 ofs << Jh.size() << " " << 1 << std::endl;
                 for (int i=0; i < Jh.size(); ++i) {
                     ofs << Jh[i] << std::endl;
+                }
+                ofs.close();
+
+                ofs.open("aD.mtx");
+                ofs.precision(std::numeric_limits<double>::max_digits10);
+                ofs << "%%MatrixMarket matrix array real general" << std::endl;
+                ofs << aD.size() << " " << 1 << std::endl;
+                for (int i=0; i < aD.size(); ++i) {
+                    ofs << aD[i] << std::endl;
                 }
                 ofs.close();
             }
@@ -92,8 +113,12 @@ namespace DG
             SparseBlockMatrix<npl> A;
             /** @brief Helper for building the sparse block matrices */
             SparseBlockMatrixBuilder<npl> M_builder, MM_builder, G_builder, T_builder;
+            /** @brief Dirichlet contribution to RHS */
+            Vector Jg;
             /** @brief Neumann contribution to RHS */
             Vector Jh;
+            /** @brief Dirichlet penalty contribution to RHS */
+            Vector aD;
     };
 }
 

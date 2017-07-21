@@ -34,19 +34,19 @@ int main(int argc, char* argv[])
     std::function<double(DG::Tuple<double,N>)> ufun, ffun;
     switch (bctype) {
         case DG::kDirichlet:
-            bcs = DG::BoundaryConditions<P,N>::Dirichlet(mesh, 1.0);
-            ufun = [](DG::Tuple<double,N> x) { return sin(2*M_PI*x[0])*sin(2*M_PI*x[1]) + 1.0; };
-            ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
+            ufun = [](DG::Tuple<double,N> x) { return cos(2*M_PI*x[0])*cos(2*M_PI*x[1]) + x[0] + x[1]; };
+            ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*cos(2*M_PI*x[0])*cos(2*M_PI*x[1]); };
+            bcs = DG::BoundaryConditions<P,N>::Dirichlet(mesh, ufun);
             break;
         case DG::kNeumann:
-            bcs = DG::BoundaryConditions<P,N>::Neumann(mesh, -1.0);
             ufun = [](DG::Tuple<double,N> x) { return x[0]*(1-x[0]) + x[1]*(1-x[1]); };
             ffun = [](DG::Tuple<double,N> x) { return 4.0; };
+            bcs = DG::BoundaryConditions<P,N>::Neumann(mesh, -1.0);
             break;
         case DG::kPeriodic:
-            DG::BoundaryConditions<P,N>::Periodic(mesh);
             ufun = [](DG::Tuple<double,N> x) { return sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
             ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
+            DG::BoundaryConditions<P,N>::Periodic(mesh);
             break;
         default:
             throw std::invalid_argument("Unknown boundary condition.");
