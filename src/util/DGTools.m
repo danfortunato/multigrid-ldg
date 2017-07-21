@@ -223,14 +223,15 @@ DGFunction /: LeastSquares[A_?MatrixQ, f:DGFunction[{P_, N_, ne_}, _, ___], opts
 (*DGLoad*)
 
 
-DGLoad[] := Module[{M, MM, G, T, u, f},
+DGLoad[] := Module[{M, MM, G, T, u, f, Jh},
 	M  = Import[FileNameJoin[{$baseDir, "M.mtx"}]];
 	MM = Import[FileNameJoin[{$baseDir, "MM.mtx"}]];
 	G  = Import[FileNameJoin[{$baseDir, "G.mtx"}]];
 	T  = Import[FileNameJoin[{$baseDir, "T.mtx"}]];
 	u  = Import[FileNameJoin[{$baseDir, "u.fun"}], "DGFunction"];
 	f  = Import[FileNameJoin[{$baseDir, "f.fun"}], "DGFunction"];
-	{M, MM, G, T, u, f}
+	Jh = Import[FileNameJoin[{$baseDir, "Jh.mtx"}]];
+	{M, MM, G, T, u, f, Jh}
 ]
 
 
@@ -238,9 +239,9 @@ DGLoad[] := Module[{M, MM, G, T, u, f},
 (*DGRun*)
 
 
-DGRun[h_:Nothing, periodic_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
+DGRun[h_:Nothing, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
 	FileNameJoin[{$binDir, "dg_tests"}],
-	Sequence@@{N[h], If[periodic===Nothing, Nothing, Boole[periodic]], N[\[Tau]0], N[\[Tau]D]}
+	Sequence@@{N[h], bctype, N[\[Tau]0], N[\[Tau]D]}
 ]
 
 
@@ -248,11 +249,11 @@ DGRun[h_:Nothing, periodic_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
 (*DGConvergence*)
 
 
-DGConvergence[hs:{__?NumericQ}, periodic_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Module[
+DGConvergence[hs:{__?NumericQ}, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Module[
 	{u, uu, f, M, MM, G, T, solve},
-	solve = If[TrueQ[periodic], LeastSquares, LinearSolve];
+	solve = If[bctype===2, LeastSquares, LinearSolve];
 	Reap[Do[
-		DGRun[h, periodic, \[Tau]0, \[Tau]D];
+		DGRun[h, bctype, \[Tau]0, \[Tau]D];
 		{M, MM, G, T, u, f} = DGLoad[];
 		uu = solve[G\[Transpose].MM.G+T, M.f];
 		Sow[Norm[uu - u] / Norm[u]],
@@ -279,7 +280,7 @@ DGPlot[f_DGFunction, opts:OptionsPattern[ListPlot3D]] := Module[{int},
 ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*DGConvergencePlot*)
 
 
@@ -288,16 +289,16 @@ DGConvergencePlot[hs:{__?NumericQ}] := DGConvergencePlot[hs, DGConvergence[hs]]
 
 DGConvergencePlot[hs:{__?NumericQ}, err:{__?NumericQ}] := Module[
 	{data, fit, x, slope, domain, range, xticks, yticks, format, relabel},
-	
+
 	data = Transpose[{hs, err}];
 	fit = Fit[Log[data[[-3;;]]],{1,x},x];
 	slope = fit // Last // First;
 	fit = fit /. x->Log[x] // Exp;
-	
+
 	xticks = Transpose[{hs, Superscript[2,#]& /@ Round@Log2[hs]}];
 	yticks = Range@@{Floor[#1],Ceiling[#2]}& @@ MinMax@Log10[err] // Reverse;
 	yticks = {10^#, Superscript[10,#]}& /@ yticks;
-	
+
 	domain = MinMax[hs] + {-1,1}*MinMax[hs]/2;
 	range = MinMax[yticks[[All,1]]] + {-1,1}*MinMax[yticks[[All,1]]]/2;
 
@@ -307,7 +308,38 @@ DGConvergencePlot[hs:{__?NumericQ}, err:{__?NumericQ}] := Module[
 			PlotLegends -> {NumberForm[slope,3]},
 			Frame -> True,
 			PlotRangePadding -> False,
-			FrameTicks -> {{yticks, Automatic}, {xticks, Automatic}}
+			FrameTicks -> {{yticks, None}, {xticks, None}}
+		],
+		ListPlot[Log[data],
+			PlotMarkers -> {Automatic, 12},
+			PlotRangePadding -> False
+		]
+	]
+]
+
+
+DGConvergencePlot[hs:{__?NumericQ}, err:{{__?NumericQ}..}] := Module[
+	{data, fit, x, slope, domain, range, xticks, yticks},
+
+	data = Transpose[{Take[hs, Length[#]], #}]& /@ err;
+	fit = Fit[Log[#[[-3;;-2]]],{1,x},x]& /@ data;
+	slope = First[Last[#]]& /@ fit;
+	fit = fit /. x->Log[x] // Exp;
+
+	xticks = Transpose[{hs, Superscript[2,#]& /@ Round@Log2[hs]}];
+	yticks = Range@@{Floor[#1],Ceiling[#2]}& @@ MinMax@Log10[Flatten@err] // Reverse;
+	yticks = {10^#, Superscript[10,#]}& /@ yticks;
+
+	domain = MinMax[hs] + {-1,1}*MinMax[hs]/2;
+	range = MinMax[yticks[[All,1]]] + {-1,1}*MinMax[yticks[[All,1]]]/2;
+
+	Show[
+		LogLogPlot[fit, {x, First[domain], Last[domain]},
+			PlotRange -> {domain, range},
+			PlotLegends -> {ToString[NumberForm[#,{2,1}]]& /@ slope},
+			Frame -> True,
+			PlotRangePadding -> False,
+			FrameTicks -> {{yticks, None}, {xticks, None}}
 		],
 		ListPlot[Log[data],
 			PlotMarkers -> {Automatic, 12},
