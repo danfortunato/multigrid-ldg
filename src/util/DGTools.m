@@ -223,15 +223,17 @@ DGFunction /: LeastSquares[A_?MatrixQ, f:DGFunction[{P_, N_, ne_}, _, ___], opts
 (*DGLoad*)
 
 
-DGLoad[] := Module[{M, MM, G, T, u, f, Jh},
+DGLoad[] := Module[{M, MM, G, T, u, f, Jg, Jh, aD},
 	M  = Import[FileNameJoin[{$baseDir, "M.mtx"}]];
 	MM = Import[FileNameJoin[{$baseDir, "MM.mtx"}]];
 	G  = Import[FileNameJoin[{$baseDir, "G.mtx"}]];
 	T  = Import[FileNameJoin[{$baseDir, "T.mtx"}]];
 	u  = Import[FileNameJoin[{$baseDir, "u.fun"}], "DGFunction"];
 	f  = Import[FileNameJoin[{$baseDir, "f.fun"}], "DGFunction"];
+	Jg = Import[FileNameJoin[{$baseDir, "Jg.mtx"}]];
 	Jh = Import[FileNameJoin[{$baseDir, "Jh.mtx"}]];
-	{M, MM, G, T, u, f, Jh}
+	aD = Import[FileNameJoin[{$baseDir, "aD.mtx"}]];
+	{M, MM, G, T, u, f, Jg, Jh, aD}
 ]
 
 
