@@ -11,7 +11,6 @@ namespace DG
     {
         kDirichlet,
         kNeumann,
-        kRobin,
         kPeriodic
     };
 
@@ -33,61 +32,49 @@ namespace DG
     struct BoundaryConditions
     {
         /** Construct empty boundary conditions for a mesh */
-        BoundaryConditions(Mesh<P,N>& mesh_) : mesh(mesh_) {}
+        BoundaryConditions(const Mesh<P,N>& mesh_) : mesh(&mesh_) {}
 
         /** Construct uniform boundary conditions for a mesh */
-        BoundaryConditions(Mesh<P,N>& mesh_, BoundaryCondition<P,N> bc) :
-            mesh(mesh_)
+        BoundaryConditions(const Mesh<P,N>& mesh_, BoundaryCondition<P,N> bc) :
+            mesh(&mesh_)
         {
-            for (int bnd : mesh.boundaryIndices) {
+            for (int bnd : mesh->boundaryIndices) {
                 bcmap.emplace(bnd, bc);
             }
         }
 
         /** Construct zero Dirichlet conditions for a mesh */
-        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh_, double value = 0)
+        static BoundaryConditions<P,N> Dirichlet(const Mesh<P,N>& mesh_, double value = 0)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kDirichlet, value));
         }
 
         /** Construct given Dirichlet conditions for a mesh */
-        static BoundaryConditions<P,N> Dirichlet(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
+        static BoundaryConditions<P,N> Dirichlet(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kDirichlet, f));
         }
 
         /** Construct zero Neumann conditions for a mesh */
-        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh_, double value = 0)
+        static BoundaryConditions<P,N> Neumann(const Mesh<P,N>& mesh_, double value = 0)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kNeumann, value));
         }
 
         /** Construct given Neumann conditions for a mesh */
-        static BoundaryConditions<P,N> Neumann(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
+        static BoundaryConditions<P,N> Neumann(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kNeumann, f));
         }
 
-        /** Construct zero Robin conditions for a mesh */
-        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh_, double value = 0)
-        {
-            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kRobin, value));
-        }
-
-        /** Construct given Robin conditions for a mesh */
-        static BoundaryConditions<P,N> Robin(Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
-        {
-            return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kRobin, f));
-        }
-
         /** Construct periodic conditions for a mesh */
-        static BoundaryConditions<P,N> Periodic(Mesh<P,N>& mesh_)
+        static BoundaryConditions<P,N> Periodic(const Mesh<P,N>& mesh_)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kPeriodic));
         }
         
         /** The mesh */
-        const Mesh<P,N>& mesh;
+        const Mesh<P,N>* mesh;
 
         /** A mapping between the geometric boundary indices and the boundary
          *  condition to apply on each geometric boundary */
