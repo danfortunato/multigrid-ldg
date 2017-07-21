@@ -1,6 +1,8 @@
 #ifndef LDG_POISSON_H
 #define LDG_POISSON_H
 
+#include <fstream>
+#include <limits>
 #include "common.h"
 #include "mesh.h"
 #include "boundaryconditions.h"
@@ -18,7 +20,8 @@ namespace DG
                 mesh(&mesh_),
                 bcs(bcs_),
                 tau0(tau0_),
-                tauD(tauD_)
+                tauD(tauD_),
+                Jh(Vector::Zero(mesh->ne * npl))
             {
                 // Reset the builders to be the correct size
                 M_builder.reset(mesh->ne, mesh->ne);
@@ -50,6 +53,15 @@ namespace DG
                 MM_builder.write("MM.mtx");
                 G_builder.write("G.mtx");
                 T_builder.write("T.mtx");
+
+                std::ofstream ofs("Jh.mtx");
+                ofs.precision(std::numeric_limits<double>::max_digits10);
+                ofs << "%%MatrixMarket matrix array real general" << std::endl;
+                ofs << Jh.size() << " " << 1 << std::endl;
+                for (int i=0; i < Jh.size(); ++i) {
+                    ofs << Jh[i] << std::endl;
+                }
+                ofs.close();
             }
 
         private:
@@ -80,6 +92,8 @@ namespace DG
             SparseBlockMatrix<npl> A;
             /** @brief Helper for building the sparse block matrices */
             SparseBlockMatrixBuilder<npl> M_builder, MM_builder, G_builder, T_builder;
+            /** @brief Neumann contribution to RHS */
+            Vector Jh;
     };
 }
 

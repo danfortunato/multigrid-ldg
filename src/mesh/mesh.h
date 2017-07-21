@@ -279,14 +279,16 @@ namespace DG
         /** @brief Compute the lifting matrices for a given face
          *
          *  @param[in]  f  : The face to lift from
-         *  @param[out] LL : Trial from the left, test from the left
-         *  @param[out] RR : Trial from the right, test from the right
-         *  @param[out] RL : Trial from the right, test from the left
+         *  @param[out] L  : Test from the left
+         *  @param[out] R  : Test from the right
+         *  @param[out] LL : Test from the left, trial from the left
+         *  @param[out] RR : Test from the right, trial from the right
+         *  @param[out] RL : Test from the right, trial from the left
          */
-        void lift(const Face<P,N>& f, KronMat<P,N>& LL, KronMat<P,N>& RR, KronMat<P,N>& RL) const
+        void lift(const Face<P,N>& f, FaceQuadMat<P,Q,N>& L, FaceQuadMat<P,Q,N>& R, KronMat<P,N>& LL, KronMat<P,N>& RR, KronMat<P,N>& RL) const
         {
             // Can we use the 1D mass matrix?
-            if (f.canonical) {
+            if (f.canonical && !f.boundaryQ()) {
 
                 // Compute slicing matrices
                 SliceMat<P,N> slice_l, slice_r;
@@ -319,9 +321,26 @@ namespace DG
                 EvalMat<P,Q,N> phi_l, phi_r;
                 KronVec<Q,N-1> w;
                 for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                    Tuple<double,N> ql, qr;
+                    if (f.canonical) {
+                        // Tensor product from the master quadrature nodes
+                        for (int k=0; k<N-1; ++k) {
+                            double x = Quadrature<Q>::nodes[it(k)];
+                            int kk = k + (k>=f.dim);
+                            ql[kk] = x;
+                            qr[kk] = x;
+                        }
+                        // Place quadrature nodes on the correct side
+                        ql[f.dim] = (f.normal[f.dim] > 0) ? 1 : 0;
+                        qr[f.dim] = (f.normal[f.dim] > 0) ? 0 : 1;
+                    } else {
+                        // Use face's precomputed quadrature nodes
+                        ql = f.xl(it.index());
+                        qr = f.xr(it.index());
+                    }
                     int i = it.linearIndex();
-                    phi_l.row(i) = LagrangePoly<P>::eval(f.xl(it.index()));
-                    phi_r.row(i) = LagrangePoly<P>::eval(f.xr(it.index()));
+                    phi_l.row(i) = LagrangePoly<P>::eval(ql);
+                    phi_r.row(i) = LagrangePoly<P>::eval(qr);
                     w[i] = 1;
                     for (int k=0; k<N-1; ++k) {
                         w[i] *= Quadrature<Q>::weights[it(k)];
@@ -330,9 +349,11 @@ namespace DG
                 // Scale the quadrature weights according to the area of the face
                 w *= f.area();
 
-                LL = phi_l.transpose() * w.asDiagonal() * phi_l;
-                RR = phi_r.transpose() * w.asDiagonal() * phi_r;
-                RL = phi_r.transpose() * w.asDiagonal() * phi_l;
+                L = phi_l.transpose() * w.asDiagonal();
+                R = phi_r.transpose() * w.asDiagonal();
+                LL = L * phi_l;
+                RR = R * phi_r;
+                RL = R * phi_l;
             }
         }
 

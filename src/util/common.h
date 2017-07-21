@@ -25,9 +25,15 @@ namespace DG
     template<int M, int N>
     using Mat = Eigen::Matrix<double,M,N,Eigen::RowMajor>;
 
-    /** Compile-time-sized vector */
+    /** Runtime-sized matrix */
+    using Matrix = Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+
+    /** Compile-time-sized column vector */
     template<int N>
     using Vec = Eigen::Matrix<double,N,1>;
+
+    /** Runtime-sized column vector */
+    using Vector = Eigen::Matrix<double,Eigen::Dynamic,1>;
 
     /** Compile-time-sized tuple */
     template<typename T, int N>
@@ -56,6 +62,14 @@ namespace DG
     /** Compile-time-sized evaluation matrix */
     template<int P, int Q, int N>
     using EvalMat = Eigen::Matrix<double,ipow(Q,N-1),ipow(P,N),Eigen::RowMajor>;
+
+    /** Compile-time-sized element integration matrix */
+    template<int P, int Q, int N>
+    using ElemQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N),Eigen::RowMajor>;
+
+    /** Compile-time-sized face integration matrix */
+    template<int P, int Q, int N>
+    using FaceQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N-1),Eigen::RowMajor>;
 
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>

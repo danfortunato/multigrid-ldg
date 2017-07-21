@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "range.h"
 
 namespace DG
@@ -67,12 +68,13 @@ namespace DG
     template<int P, int N>
     void LDGPoisson<P,N>::construct_lifting_terms()
     {
+        FaceQuadMat<P,Q,N> L, R;
         KronMat<P,N> LL, RR, RL, MinvR, MinvL;
 
         for (const auto& f : mesh->faces) {
 
             // Compute the lifting matrices
-            mesh->lift(f, LL, RR, RL);
+            mesh->lift(f, L, R, LL, RR, RL);
 
             // Since the normals are the coordinate vectors, the only nonzero
             // component of the normal dot product is the in dimension this face
@@ -90,11 +92,39 @@ namespace DG
                 T_builder.addToBlock(f.left,  f.left,   tau0 * LL);
                 T_builder.addToBlock(f.right, f.left,  -tau0 * RL);
                 T_builder.addToBlock(f.left,  f.right, -tau0 * RL.transpose());
-            } else if (bcs.bcmap.at(f.boundary()).type == kDirichlet) {
-                // Lifting operator
-                G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
-                // Penalty terms
-                T_builder.addToBlock(f.left, f.left, tauD * LL);
+            } else {
+                switch (bcs.bcmap.at(f.boundary()).type) {
+
+                    case kDirichlet:
+                    {
+                        // Lifting operator
+                        G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
+                        // Penalty terms
+                        T_builder.addToBlock(f.left, f.left, tauD * LL);
+                        break;
+                    }
+                    case kNeumann:
+                    {
+                        const auto& hfun = bcs.bcmap.at(f.boundary()).f;
+                        // Evaluate hfun at the quadrature points
+                        KronVec<Q,N-1> h;
+                        for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                            Tuple<double,N> q;
+                            for (int k=0; k<N-1; ++k) {
+                                double x = Quadrature<Q>::nodes[it(k)];
+                                int kk = k + (k>=f.dim);
+                                q[kk] = f.cell.lower[kk] + f.cell.width(kk)*x;
+                            }
+                            q[f.dim] = f.cell.lower[f.dim];
+                            int i = it.linearIndex();
+                            h[i] = hfun(q);
+                        }
+                        Jh.segment<npl>(npl*f.left) += MinvL * L * h;
+                        break;
+                    }
+                    default:
+                        throw std::invalid_argument("Unknown boundary condition.");
+                }
             }
         }
     }

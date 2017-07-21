@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <string>
 #include <fstream>
@@ -71,6 +72,23 @@ namespace DG
                     }
                 }
                 return norm;
+            }
+
+            /** @brief Make the function mean-zero by projecting out the mean */
+            void meanZero()
+            {
+                double mean = 0;
+                for (int elem = 0; elem < mesh->ne; ++elem) {
+                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                        mean += coeffs[elem](it.index());
+                    }
+                }
+                mean /= NDArray<double,P,N>::size() * coeffs.size();
+                for (int elem = 0; elem < mesh->ne; ++elem) {
+                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                        coeffs[elem](it.index()) -= mean;
+                    }
+                }
             }
 
             /** @brief Write the function to a file */
