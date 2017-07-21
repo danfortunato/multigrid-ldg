@@ -17,6 +17,7 @@ BeginPackage["DGTools`"];
 DGFunction::usage = "";
 DGLoad::usage = "";
 DGRun::usage = "";
+DGSolve::usage = "";
 DGConvergence::usage = "";
 
 DGPlot::usage = "";
@@ -243,7 +244,21 @@ DGLoad[] := Module[{M, MM, G, T, u, f, Jg, Jh, aD},
 
 DGRun[h_:Nothing, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
 	FileNameJoin[{$binDir, "dg_tests"}],
-	Sequence@@{N[h], bctype, N[\[Tau]0], N[\[Tau]D]}
+	Sequence@@{N[h], Switch[bctype, "Dirichlet", 0, "Neumann", 1, _, 2], N[\[Tau]0], N[\[Tau]D]}
+]
+
+
+(* ::Section::Closed:: *)
+(*DGSolve*)
+
+
+DGSolve[f_DGFunction, bctype_, M_, MM_, G_, T_, Jg_, Jh_, aD_] := Module[{ff, solve, coeffs, data},
+		ff = Flatten[f["Coeffs"]];
+		solve = If[MatchQ[bctype, "Periodic"|"Neumann"], LeastSquares, LinearSolve];
+		coeffs = solve[G\[Transpose].MM.G + T, M.ff - G\[Transpose].MM.Jg + M.Jh + aD];
+		data = f["Data"];
+		data[[All, All, -1]] = ArrayReshape[coeffs, Dimensions[data[[All, All, -1]]]];
+		DGFunction[{f["P"], f["N"], f["NumberOfElements"]}, data]
 ]
 
 
@@ -252,12 +267,11 @@ DGRun[h_:Nothing, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
 
 
 DGConvergence[hs:{__?NumericQ}, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Module[
-	{u, uu, f, M, MM, G, T, solve},
-	solve = If[bctype===2, LeastSquares, LinearSolve];
+	{u, uu, f, M, MM, G, T, Jg, Jh, aD, solve, coeffs, data},
 	Reap[Do[
 		DGRun[h, bctype, \[Tau]0, \[Tau]D];
-		{M, MM, G, T, u, f} = DGLoad[];
-		uu = solve[G\[Transpose].MM.G+T, M.f];
+		{M, MM, G, T, u, f, Jg, Jh, aD} = DGLoad[];
+		uu = DGSolve[f, bctype, M, MM, G, T, Jg, Jh, aD];
 		Sow[Norm[uu - u] / Norm[u]],
 		{h, N[hs]}
 	]][[2, 1]]
@@ -293,7 +307,7 @@ DGConvergencePlot[hs:{__?NumericQ}, err:{__?NumericQ}] := Module[
 	{data, fit, x, slope, domain, range, xticks, yticks, format, relabel},
 
 	data = Transpose[{hs, err}];
-	fit = Fit[Log[data[[-3;;]]],{1,x},x];
+	fit = Fit[Log[data[[-2;;]]],{1,x},x];
 	slope = fit // Last // First;
 	fit = fit /. x->Log[x] // Exp;
 
@@ -324,7 +338,7 @@ DGConvergencePlot[hs:{__?NumericQ}, err:{{__?NumericQ}..}] := Module[
 	{data, fit, x, slope, domain, range, xticks, yticks},
 
 	data = Transpose[{Take[hs, Length[#]], #}]& /@ err;
-	fit = Fit[Log[#[[-3;;-2]]],{1,x},x]& /@ data;
+	fit = Fit[Log[#[[-2;;]]],{1,x},x]& /@ data;
 	slope = First[Last[#]]& /@ fit;
 	fit = fit /. x->Log[x] // Exp;
 
