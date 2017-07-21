@@ -39,7 +39,7 @@ namespace DG
             Function(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f) :
                 mesh(&mesh_)
             {
-                coeffs.reserve(mesh->ne);
+                coeffs.resize(mesh->ne);
                 for (int elem = 0; elem < mesh->ne; ++elem) {
                     for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
                         coeffs[elem](it.index()) = f(mesh->elements[elem].dgnodes(it.index()));
