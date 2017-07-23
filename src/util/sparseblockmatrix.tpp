@@ -449,11 +449,13 @@ namespace DG
     bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
         // Let MKL do the arithmetic
+        matrix_descr descr;
+        descr.type = SPARSE_MATRIX_TYPE_GENERAL;
         sparse_status_t status = mkl_sparse_d_mv(
             SPARSE_OPERATION_NON_TRANSPOSE,
             alpha,
             A.getMKL(),
-            SPARSE_MATRIX_TYPE_GENERAL,
+            descr,
             x,
             beta,
             y
@@ -488,11 +490,13 @@ namespace DG
     bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
         // Let MKL do the arithmetic
+        matrix_descr descr;
+        descr.type = SPARSE_MATRIX_TYPE_GENERAL;
         sparse_status_t status = mkl_sparse_d_mv(
             SPARSE_OPERATION_TRANSPOSE,
             alpha,
             A.getMKL(),
-            SPARSE_MATRIX_TYPE_GENERAL,
+            descr,
             x,
             beta,
             y
