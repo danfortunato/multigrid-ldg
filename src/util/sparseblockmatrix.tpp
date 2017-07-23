@@ -219,6 +219,33 @@ namespace DG
         }
     }
 
+    /** @brief Write the matrix to a file (in Matrix Market format)
+     *
+     *  @param[in] file : The filename
+     */
+    template<int P>
+    void SparseBlockMatrix<P>::write(const std::string& file) const
+    {
+        std::ofstream ofs(file);
+        ofs.precision(std::numeric_limits<double>::max_digits10);
+
+        ofs << "%%MatrixMarket matrix coordinate real general" << std::endl;
+        ofs << rows() << " " << cols() << " " << nnz() << std::endl;
+        for (int bi = 0; bi < blockRows(); ++bi) {
+            for (int k = rowIndex_[bi]; k < rowIndex_[bi+1]; ++k) {
+                int bj = columns_[k];
+                for (int i=0; i<P; ++i) {
+                    for (int j=0; j<P; ++j) {
+                        double val = values_[blockSize()*k + P*i + j];
+                        ofs << P*bi+i+1 << " " << P*bj+j+1 << " " << val << std::endl;
+                    }
+                }
+            }
+        }
+
+        ofs.close();
+    }
+
     /***************************
      *** Arithmetic routines ***
      ***************************/
@@ -561,18 +588,19 @@ namespace DG
         n_ = n;
         blockMap_.clear();
     }
+
     /** @brief Write the matrix to a file (in Matrix Market format)
      *
      *  @param[in] file : The filename
      */
     template<int P>
-    void SparseBlockMatrixBuilder<P>::write(const std::string& file)
+    void SparseBlockMatrixBuilder<P>::write(const std::string& file) const
     {
         std::ofstream ofs(file);
         ofs.precision(std::numeric_limits<double>::max_digits10);
 
         ofs << "%%MatrixMarket matrix coordinate real general" << std::endl;
-        ofs << blockRows()*P << " " << blockCols()*P << " " << nnz() << std::endl;
+        ofs << rows() << " " << cols() << " " << nnz() << std::endl;
         for (auto it = blockMap_.begin(); it != blockMap_.end(); ++it) {
             int bi = it->first.i * P;
             int bj = it->first.j * P;

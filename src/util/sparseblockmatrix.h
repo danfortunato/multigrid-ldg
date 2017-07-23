@@ -74,6 +74,9 @@ namespace DG
             /** Scale the matrix */
             void scale(double alpha);
 
+            /** Write the matrix to a file (in Matrix Market format) */
+            void write(const std::string& file) const;
+
         private:
 
             /** The number of block rows */
@@ -190,7 +193,7 @@ namespace DG
             void reset(int m, int n);
 
             /** Write the matrix to a file (in Matrix Market format) */
-            void write(const std::string& file);
+            void write(const std::string& file) const;
 
         private:
 
