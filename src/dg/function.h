@@ -46,6 +46,58 @@ namespace DG
                 }
             }
 
+            /** @brief The total number of coefficients in the function */
+            int size() const
+            {
+                return coeffs.size() * coeffs[0].size();
+            }
+
+            /** @brief Access the coefficient data for a given element
+             *
+             *  @note If no element is specified, this will return a pointer to
+             *        the beginning of the entire coefficient array.
+             */
+            double* data(int elem = 0)
+            {
+                return coeffs[elem].data();
+            }
+
+
+            /** @brief Access the coefficient data for a given element (const version)
+             *
+             *  @note If no element is specified, this will return a pointer to
+             *        the beginning of the entire coefficient array.
+             */
+            const double* data(int elem = 0) const
+            {
+                // return coeffs[0].data();
+                return coeffs[elem].data();
+            }
+
+            /** @brief Represent the function's coefficients as a Vector */
+            Map<Vector> vec()
+            {
+                return Map<Vector>(data(), size(), 1);
+            }
+
+            /** @brief Represent the function's coefficients as a Vector (const version) */
+            const Map<const Vector> vec() const
+            {
+                return Map<const Vector>(data(), size(), 1);
+            }
+
+            /** @brief Represent the function's coefficients for a given element as a Vector */
+            Map<KronVec<P,N>> vec(int elem)
+            {
+                return Map<KronVec<P,N>>(data(elem));
+            }
+
+            /** @brief Represent the function's coefficients for a given element as a Vector (const version) */
+            const Map<const KronVec<P,N>> vec(int elem) const
+            {
+                return Map<const KronVec<P,N>>(data(elem));
+            }
+
             /** @brief Evaluate the function */
             double operator()(Tuple<double,N> x)
             {

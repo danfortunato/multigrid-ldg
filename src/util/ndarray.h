@@ -56,6 +56,16 @@ namespace DG
                 return P;
             }
 
+            T* data()
+            {
+                return data_.data();
+            }
+
+            const T* data() const
+            {
+                return data_.data();
+            }
+
             // Iterators
             friend class NDArrayIterator<T,P,N>;
             friend class NDArrayConstIterator<T,P,N>;
@@ -138,6 +148,16 @@ namespace DG
             int size(int i)
             {
                 return sizes_[i];
+            }
+
+            T* data()
+            {
+                return data_.data();
+            }
+
+            const T* data() const
+            {
+                return data_.data();
             }
 
             // Iterators
