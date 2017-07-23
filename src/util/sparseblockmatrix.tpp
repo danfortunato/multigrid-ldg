@@ -410,6 +410,7 @@ namespace DG
     template<int P>
     bool multiply_mv(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
+        y.resize(A.rows());
         return multiply_add_mv(1.0, A, x, 0.0, y);
     }
 
@@ -434,6 +435,7 @@ namespace DG
     template<int P>
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
+        y.resize(A.cols());
         return multiply_add_mv_t(1.0, A, x, 0.0, y);
     }
 
