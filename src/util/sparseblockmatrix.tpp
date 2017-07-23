@@ -304,8 +304,8 @@ namespace DG
     bool add_mm_t(double alpha, const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
-        if (A.blockRows() != B.blockRows() ||
-            A.blockCols() != B.blockCols()) {
+        if (A.blockCols() != B.blockRows() ||
+            A.blockRows() != B.blockCols()) {
             return false;
         }
 
@@ -368,7 +368,7 @@ namespace DG
     bool multiply_mm_t(const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
     {
         // Check that the matrix dimensions match
-        if (A.blockCols() != B.blockRows()) {
+        if (A.blockRows() != B.blockRows()) {
             return false;
         }
 
