@@ -401,6 +401,18 @@ namespace DG
         return multiply_add_mv(1.0, A, x, 0.0, y);
     }
 
+    /** @brief Matrix-vector multiplication
+     *
+     *  @param[in]  A : Sparse block matrix
+     *  @param[in]  x : Dense vector
+     *  @param[out] y : y := A*x
+     */
+    template<int P>
+    bool multiply_mv(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
+    {
+        return multiply_add_mv(1.0, A, x, 0.0, y);
+    }
+
     /** @brief Matrix-vector multiplication (transposed)
      *
      *  @param[in]  A : Sparse block matrix
@@ -409,6 +421,18 @@ namespace DG
      */
     template<int P>
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const double* x, double* y)
+    {
+        return multiply_add_mv_t(1.0, A, x, 0.0, y);
+    }
+
+    /** @brief Matrix-vector multiplication (transposed)
+     *
+     *  @param[in]  A : Sparse block matrix
+     *  @param[in]  x : Dense vector
+     *  @param[out] y : y := A^T*x
+     */
+    template<int P>
+    bool multiply_mv_t(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
         return multiply_add_mv_t(1.0, A, x, 0.0, y);
     }
@@ -438,6 +462,20 @@ namespace DG
         return status == SPARSE_STATUS_SUCCESS;
     }
 
+    /** @brief Matrix-vector multiplication
+     *
+     *  @param[in]     alpha : Scaling factor for A
+     *  @param[in]     A     : Sparse block matrix
+     *  @param[in]     x     : Dense vector
+     *  @param[in]     beta  : Scaling factor for y
+     *  @param[in,out] y     : y := alpha*A*x + beta*y
+     */
+    template<int P>
+    bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const Vector& x, double beta, Vector& y)
+    {
+        return multiply_add_mv(alpha, A, x.data(), beta, y.data());
+    }
+
     /** @brief Matrix-vector multiplication (transposed)
      *
      *  @param[in]     alpha : Scaling factor for A
@@ -461,6 +499,20 @@ namespace DG
         );
 
         return status == SPARSE_STATUS_SUCCESS;
+    }
+
+    /** @brief Matrix-vector multiplication (transposed)
+     *
+     *  @param[in]     alpha : Scaling factor for A
+     *  @param[in]     A     : Sparse block matrix
+     *  @param[in]     x     : Dense array
+     *  @param[in]     beta  : Scaling factor for y
+     *  @param[in,out] y     : y := alpha*A^T*x + beta*y
+     */
+    template<int P>
+    bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const Vector& x, double beta, Vector& y)
+    {
+        return multiply_add_mv_t(alpha, A, x.data(), beta, y.data());
     }
 
     /********************************
