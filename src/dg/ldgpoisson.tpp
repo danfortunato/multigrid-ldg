@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include "range.h"
+#include "krylov.h"
 
 namespace DG
 {
@@ -169,14 +170,30 @@ namespace DG
         }
     }
 
+    /** @brief Solve the linear system
+     *
+     *  @pre discretize() must be called before solve().
+     *
+     *  @param[in] f : The forcing function
+     */
     template<int P, int N>
-    void LDGPoisson<P,N>::assemble_system()
+    Function<P,N> LDGPoisson<P,N>::solve(Function<P,N>& f)
     {
-        M = M_builder.build();
-        G = G_builder.build();
-        T = T_builder.build();
+        // Compute the contribution of the boundary conditions to the RHS
+        add_source_terms();
 
-        // Create the discrete Laplacian
-        // A = G^T M G + T ...
+        // Add the forcing function and Dirichlet contribution to the RHS
+        M = M_builder.build();
+        multiply_add_mv(   1.0, M,  f.data(), 1.0, rhs.data());
+        multiply_add_mv_t(-1.0, G, Jg.data(), 1.0, rhs.data());
+
+        // Solve using PCG
+        Function<P,N> u(*mesh);
+        auto uvec = u.vec();
+        auto rvec = rhs.vec();
+        pcg(A, rvec, uvec);
+
+        return u;
     }
+
 }

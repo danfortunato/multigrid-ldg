@@ -1,17 +1,19 @@
-MKLROOT = /opt/intel/mkl
+INTELROOT = /opt/intel
+MKLROOT   = $(INTELROOT)/mkl
 
 CC     = gcc-7
 CXX    = g++-7
-CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -g -std=c++17 -O3 -m64
-INCDIR = -I.. -I/opt/intel/mkl/include
-LIBDIR = -L$(MKLROOT)/lib -Wl,-rpath,$(MKLROOT)/lib
-LIB    = -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -g -std=c++17 -O3 -fopenmp
+CFLAGS += -DNDEBUG
+INCDIR = -I.. -I$(MKLROOT)/include
+LIBDIR = -L$(INTELROOT)/lib -L$(MKLROOT)/lib -Wl,-rpath,$(MKLROOT)/lib,-rpath,$(INTELROOT)/lib
+LIB    = -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
 
 BINDIR    = bin
 BUILDROOT = build
 TESTDIR   = tests
 SRCROOT   = src
-MODULES   = dg mesh util
+MODULES   = dg multigrid mesh util
 
 SRCDIR    = $(addprefix $(SRCROOT)/,$(MODULES))
 BUILDDIR  = $(addprefix $(BUILDROOT)/,$(MODULES))

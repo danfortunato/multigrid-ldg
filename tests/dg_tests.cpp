@@ -52,16 +52,19 @@ int main(int argc, char* argv[])
             throw std::invalid_argument("Unknown boundary condition.");
     }
 
-    DG::Function<P,N> u(mesh, ufun);
+    // Set up the test
+    DG::Function<P,N> u_true(mesh, ufun);
     DG::Function<P,N> f(mesh, ffun);
-    if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u.meanZero();
-    u.write("u.fun");
-    f.write("f.fun");
+    if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u_true.meanZero();
 
+    // Discretize and solve
     DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
-    poisson.dump();
+    DG::Function<P,N> u = poisson.solve(f);
 
-    //DG::Fun<P,N> u = poisson.solve(f);
+    // Output the data
+    u.write("data/u.fun");
+    u_true.write("data/u_true.fun");
+    poisson.dump();
 
     return 0;
 }
