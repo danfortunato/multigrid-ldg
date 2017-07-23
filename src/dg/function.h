@@ -23,17 +23,15 @@ namespace DG
         public:
             /** @brief Construct an empty function over a mesh */
             Function(const Mesh<P,N>& mesh_) :
+                coeffs(mesh_.ne),
                 mesh(&mesh_)
-            {
-                coeffs.reserve(mesh->ne);
-            }
+            {}
 
             /** @brief Construct a constant function over a mesh */
             Function(const Mesh<P,N>& mesh_, double value) :
+                coeffs(mesh_.ne, NDArray<double,P,N>(value)),
                 mesh(&mesh_)
-            {
-                coeffs.resize(mesh->ne, NDArray<double,P,N>(value));
-            }
+            {}
 
             /** @brief Construct a function over the mesh from a given function handle.
              *         This will be the nodal interpolant. */
