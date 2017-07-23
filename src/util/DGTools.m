@@ -224,17 +224,12 @@ DGFunction /: LeastSquares[A_?MatrixQ, f:DGFunction[{P_, N_, ne_}, _, ___], opts
 (*DGLoad*)
 
 
-DGLoad[] := Module[{M, MM, G, T, u, f, Jg, Jh, aD},
-	M  = Import[FileNameJoin[{$baseDir, "M.mtx"}]];
-	MM = Import[FileNameJoin[{$baseDir, "MM.mtx"}]];
-	G  = Import[FileNameJoin[{$baseDir, "G.mtx"}]];
-	T  = Import[FileNameJoin[{$baseDir, "T.mtx"}]];
-	u  = Import[FileNameJoin[{$baseDir, "u.fun"}], "DGFunction"];
-	f  = Import[FileNameJoin[{$baseDir, "f.fun"}], "DGFunction"];
-	Jg = Import[FileNameJoin[{$baseDir, "Jg.mtx"}]];
-	Jh = Import[FileNameJoin[{$baseDir, "Jh.mtx"}]];
-	aD = Import[FileNameJoin[{$baseDir, "aD.mtx"}]];
-	{M, MM, G, T, u, f, Jg, Jh, aD}
+DGLoad[] := Module[{u, utrue, A, rhs},
+	u      = Import[FileNameJoin[{$baseDir, "data/u.fun"}], "DGFunction"];
+	utrue  = Import[FileNameJoin[{$baseDir, "data/u_true.fun"}], "DGFunction"];
+	A      = Import[FileNameJoin[{$baseDir, "data/A.mtx"}]];
+	rhs    = Import[FileNameJoin[{$baseDir, "data/rhs.fun"}], "DGFunction"];
+	{u, utrue, A, rhs}
 ]
 
 
@@ -252,10 +247,9 @@ DGRun[h_:Nothing, bctype_:Nothing, \[Tau]0_:Nothing, \[Tau]D_:Nothing] := Run[
 (*DGSolve*)
 
 
-DGSolve[f_DGFunction, bctype_, M_, MM_, G_, T_, Jg_, Jh_, aD_] := Module[{ff, solve, coeffs, data},
-		ff = Flatten[f["Coeffs"]];
+DGSolve[A_, f_DGFunction, bctype_] := Module[{solve, coeffs, data},
 		solve = If[MatchQ[bctype, "Periodic"|"Neumann"], LeastSquares, LinearSolve];
-		coeffs = solve[G\[Transpose].MM.G + T, M.ff - G\[Transpose].MM.Jg + M.Jh + aD];
+		coeffs = solve[A, Flatten[f["Coeffs"]]];
 		data = f["Data"];
 		data[[All, All, -1]] = ArrayReshape[coeffs, Dimensions[data[[All, All, -1]]]];
 		DGFunction[{f["P"], f["N"], f["NumberOfElements"]}, data]
