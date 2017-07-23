@@ -17,7 +17,8 @@ namespace DG
         values_(nullptr),
         columns_(nullptr),
         rowIndex_(nullptr),
-        mkl_(nullptr)
+        mkl_(nullptr),
+        fromMKL_(false)
     {}
 
     /** @brief Constructor
@@ -33,7 +34,8 @@ namespace DG
         values_(nullptr),
         columns_(nullptr),
         rowIndex_(nullptr),
-        mkl_(nullptr)
+        mkl_(nullptr),
+        fromMKL_(false)
     {}
 
     /** @brief Constructor
@@ -42,7 +44,8 @@ namespace DG
      */
     template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix(sparse_matrix_t mkl) :
-        mkl_(mkl)
+        mkl_(mkl),
+        fromMKL_(true)
     {
         sparse_index_base_t indexing;
         sparse_layout_t layout;
@@ -86,7 +89,8 @@ namespace DG
         nnzb_(rowIndex[m]),
         values_(values),
         columns_(columns),
-        rowIndex_(rowIndex)
+        rowIndex_(rowIndex),
+        fromMKL_(false)
     {
         // Create the MKL representation
         if (mkl_sparse_d_create_bsr(
@@ -123,9 +127,11 @@ namespace DG
     template<int P>
     SparseBlockMatrix<P>::~SparseBlockMatrix()
     {
-        if (values_)   mkl_free(values_);
-        if (columns_)  mkl_free(columns_);
-        if (rowIndex_) mkl_free(rowIndex_);
+        if (!fromMKL_) {
+            if (values_)   mkl_free(values_);
+            if (columns_)  mkl_free(columns_);
+            if (rowIndex_) mkl_free(rowIndex_);
+        }
         if (mkl_) {
             mkl_sparse_destroy(mkl_);
             mkl_ = nullptr;
@@ -140,7 +146,8 @@ namespace DG
     SparseBlockMatrix<P>::SparseBlockMatrix(const SparseBlockMatrix<P>& other) :
         m_(other.m_),
         n_(other.n_),
-        nnzb_(other.nnzb_)
+        nnzb_(other.nnzb_),
+        fromMKL_(false)
     {
         values_   = (double *) mkl_malloc(nnz()  * sizeof(double), MKL_ALIGN);
         columns_  = (int *)    mkl_malloc(nnzb() * sizeof(int),    MKL_ALIGN);
@@ -203,6 +210,8 @@ namespace DG
 
         mkl_ = std::move(other.mkl_);
         other.mkl_ = 0;
+
+        fromMKL_ = other.fromMKL_;
 
         return *this;
     }

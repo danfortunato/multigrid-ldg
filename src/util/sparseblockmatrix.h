@@ -93,6 +93,7 @@ namespace DG
             int* columns_;
             int* rowIndex_;
             mutable sparse_matrix_t mkl_;
+            bool fromMKL_;
     };
 
     /** @brief An object for indexing into a sparse matrix */
