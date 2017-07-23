@@ -285,7 +285,7 @@ namespace DG
          *  @param[out] RR : Test from the right, trial from the right
          *  @param[out] RL : Test from the right, trial from the left
          */
-        void lift(const Face<P,N>& f, FaceQuadMat<P,Q,N>& L, FaceQuadMat<P,Q,N>& R, KronMat<P,N>& LL, KronMat<P,N>& RR, KronMat<P,N>& RL) const
+        void lift(const Face<P,N>& f, FaceQuadMat<P,Q,N>* L, FaceQuadMat<P,Q,N>* R, KronMat<P,N>* LL, KronMat<P,N>* RR, KronMat<P,N>* RL) const
         {
             // Can we use the 1D mass matrix?
             if (f.canonical && !f.boundaryQ()) {
@@ -311,9 +311,9 @@ namespace DG
                     slice_r(i,j) = 1;
                 }
 
-                LL = slice_l.transpose() * f.mass() * slice_l;
-                RR = slice_r.transpose() * f.mass() * slice_r;
-                RL = slice_r.transpose() * f.mass() * slice_l;
+                if (LL) *LL = slice_l.transpose() * f.mass() * slice_l;
+                if (RR) *RR = slice_r.transpose() * f.mass() * slice_r;
+                if (RL) *RL = slice_r.transpose() * f.mass() * slice_l;
 
             } else {
 
@@ -349,11 +349,11 @@ namespace DG
                 // Scale the quadrature weights according to the area of the face
                 w *= f.area();
 
-                L = phi_l.transpose() * w.asDiagonal();
-                R = phi_r.transpose() * w.asDiagonal();
-                LL = L * phi_l;
-                RR = R * phi_r;
-                RL = R * phi_l;
+                if (L) *L = phi_l.transpose() * w.asDiagonal();
+                if (R) *R = phi_r.transpose() * w.asDiagonal();
+                if (LL) *LL = (L ? *L : phi_l.transpose() * w.asDiagonal()) * phi_l;
+                if (RR) *RR = (R ? *R : phi_r.transpose() * w.asDiagonal()) * phi_r;
+                if (RL) *RL = (R ? *R : phi_r.transpose() * w.asDiagonal()) * phi_l;
             }
         }
 

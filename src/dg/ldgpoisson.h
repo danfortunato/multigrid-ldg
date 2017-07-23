@@ -22,8 +22,7 @@ namespace DG
                 tau0(tau0_),
                 tauD(tauD_),
                 Jg(Vector::Zero(mesh->ne * npl * N)),
-                Jh(Vector::Zero(mesh->ne * npl)),
-                aD(Vector::Zero(mesh->ne * npl))
+                rhs(mesh_, 0)
             {
                 // Reset the builders to be the correct size
                 M_builder.reset(mesh->ne, mesh->ne);
@@ -42,54 +41,27 @@ namespace DG
              */
             void discretize();
 
-            /** @brief Solve the LDG linear system
+            /** @brief Solve the linear system
              *
-             *  @note discretize() must be called before solve().
+             *  @pre discretize() must be called before solve().
+             *
+             *  @param[in] f : The forcing function
              */
             Function<P,N> solve(Function<P,N>& f);
 
             /** @brief Dump the matrices */
             void dump()
             {
-                M_builder.write("M.mtx");
-                MM_builder.write("MM.mtx");
-                G_builder.write("G.mtx");
-                T_builder.write("T.mtx");
-
-                std::ofstream ofs;
-                ofs.open("Jg.mtx");
-                ofs.precision(std::numeric_limits<double>::max_digits10);
-                ofs << "%%MatrixMarket matrix array real general" << std::endl;
-                ofs << Jg.size() << " " << 1 << std::endl;
-                for (int i=0; i < Jg.size(); ++i) {
-                    ofs << Jg[i] << std::endl;
-                }
-                ofs.close();
-
-                ofs.open("Jh.mtx");
-                ofs.precision(std::numeric_limits<double>::max_digits10);
-                ofs << "%%MatrixMarket matrix array real general" << std::endl;
-                ofs << Jh.size() << " " << 1 << std::endl;
-                for (int i=0; i < Jh.size(); ++i) {
-                    ofs << Jh[i] << std::endl;
-                }
-                ofs.close();
-
-                ofs.open("aD.mtx");
-                ofs.precision(std::numeric_limits<double>::max_digits10);
-                ofs << "%%MatrixMarket matrix array real general" << std::endl;
-                ofs << aD.size() << " " << 1 << std::endl;
-                for (int i=0; i < aD.size(); ++i) {
-                    ofs << aD[i] << std::endl;
-                }
-                ofs.close();
+                A.write("data/A.mtx");
+                rhs.write("data/rhs.fun");
             }
 
         private:
             void construct_mass_matrix();
             void construct_broken_gradient();
             void construct_lifting_terms();
-            void assemble_system();
+            void construct_laplacian();
+            void add_source_terms();
 
             /** @brief The mesh on which to solve */
             const Mesh<P,N>* mesh;
@@ -115,10 +87,8 @@ namespace DG
             SparseBlockMatrixBuilder<npl> M_builder, MM_builder, G_builder, T_builder;
             /** @brief Dirichlet contribution to RHS */
             Vector Jg;
-            /** @brief Neumann contribution to RHS */
-            Vector Jh;
-            /** @brief Dirichlet penalty contribution to RHS */
-            Vector aD;
+            /** @brief Right-hand side */
+            Function<P,N> rhs;
     };
 }
 

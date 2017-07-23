@@ -3,12 +3,19 @@
 
 namespace DG
 {
+    /** @brief Discretize the Poisson operator on the mesh using LDG
+     *
+     *  The discretization will construct matrices for the gradient,
+     *  lifting, and penalty terms and assemble the global linear system
+     *  to be solved.
+     */
     template<int P, int N>
     void LDGPoisson<P,N>::discretize()
     {
         construct_mass_matrix();
         construct_broken_gradient();
         construct_lifting_terms();
+        construct_laplacian();
     }
 
     /** @brief Construct the block diagonal mass matrices */
@@ -68,13 +75,12 @@ namespace DG
     template<int P, int N>
     void LDGPoisson<P,N>::construct_lifting_terms()
     {
-        FaceQuadMat<P,Q,N> L, R;
         KronMat<P,N> LL, RR, RL, MinvR, MinvL;
 
         for (const auto& f : mesh->faces) {
 
             // Compute the lifting matrices
-            mesh->lift(f, L, R, LL, RR, RL);
+            mesh->lift(f, nullptr, nullptr, &LL, &RR, &RL);
 
             // Since the normals are the coordinate vectors, the only nonzero
             // component of the normal dot product is the in dimension this face
@@ -92,11 +98,47 @@ namespace DG
                 T_builder.addToBlock(f.left,  f.left,   tau0 * LL);
                 T_builder.addToBlock(f.right, f.left,  -tau0 * RL);
                 T_builder.addToBlock(f.left,  f.right, -tau0 * RL.transpose());
-            } else {
+            } else if (bcs.bcmap.at(f.boundary()).type == kDirichlet) {
+                // Lifting operator
+                G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
+                // Penalty terms
+                T_builder.addToBlock(f.left, f.left, tauD * LL);
+            }
+        }
+    }
+
+    /** @brief Construct the discrete Laplacian operator */
+    template<int P, int N>
+    void LDGPoisson<P,N>::construct_laplacian()
+    {
+        MM = MM_builder.build();
+        G  = G_builder.build();
+        T  = T_builder.build();
+
+        // Compute the discrete Laplacian: A = G^T M G + T
+        SparseBlockMatrix<npl> temp;
+        multiply_mm_t(G, MM, A);
+        multiply_mm(A, G, temp);
+        add_mm(1.0, temp, T, A);
+    }
+
+    /** @brief Compute the contribution of the boundary conditions to the RHS */
+    template<int P, int N>
+    void LDGPoisson<P,N>::add_source_terms()
+    {
+        FaceQuadMat<P,Q,N> L;
+        KronVec<Q,N-1> bc;
+
+        for (const auto& f : mesh->faces) {
+
+            if (f.boundaryQ()) {
+
+                // Compute the lifting matrix
+                mesh->lift(f, &L, nullptr, nullptr, nullptr, nullptr);
+                double n = f.normal[f.dim];
 
                 // Evaluate the boundary condition at the quadrature points
                 const auto& bcfun = bcs.bcmap.at(f.boundary()).f;
-                KronVec<Q,N-1> bc;
                 for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
                     Tuple<double,N> q;
                     for (int k=0; k<N-1; ++k) {
@@ -111,17 +153,14 @@ namespace DG
 
                 switch (bcs.bcmap.at(f.boundary()).type) {
                     case kDirichlet:
-                        // Lifting operator
-                        G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
-                        // Penalty terms
-                        T_builder.addToBlock(f.left, f.left, tauD * LL);
-                        // RHS contributions
-                        Jg.segment<npl>(npl*(N*f.left+f.dim)) += n * MinvL * L * bc;
-                        aD.segment<npl>(npl*f.left) += tauD * L * bc;
+                        // Dirichlet contribution to RHS
+                        Jg.segment<npl>(npl*(N*f.left+f.dim)) += n * L * bc;
+                        // Dirichlet penalty contribution to RHS
+                        rhs.vec(f.left) += tauD * L * bc;
                         break;
                     case kNeumann:
-                        // RHS contribution
-                        Jh.segment<npl>(npl*f.left) += MinvL * L * bc;
+                        // Neumann contribution to RHS
+                        rhs.vec(f.left) += L * bc;
                         break;
                     default:
                         throw std::invalid_argument("Unknown boundary condition.");
