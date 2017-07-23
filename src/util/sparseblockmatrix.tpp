@@ -580,7 +580,7 @@ namespace DG
                 ++r;
             }
         }
-        rowIndex[m_] = nnzb() + 1;
+        rowIndex[m_] = nnzb();
 
         return SparseBlockMatrix<P>(m_, n_, values, columns, rowIndex);
     }
