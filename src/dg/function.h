@@ -35,7 +35,7 @@ namespace DG
 
             /** @brief Construct a function over the mesh from a given function handle.
              *         This will be the nodal interpolant. */
-            Function(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f) :
+            Function(const Mesh<P,N>& mesh_, const std::function<double(Tuple<double,N>)>& f) :
                 mesh(&mesh_)
             {
                 coeffs.resize(mesh->ne);

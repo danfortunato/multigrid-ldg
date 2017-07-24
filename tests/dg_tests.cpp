@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     if (argc >= 4) tau0   = atof(argv[3]);
     if (argc >= 4) tauD   = atof(argv[4]);
 
-    std::function<DG::Tuple<double,N>(DG::Tuple<double,N>)> h = [dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
+    auto h = [dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
     DG::Quadtree<N> qt(h, bctype == DG::kPeriodic);
     DG::Mesh<P,N> mesh(qt, coarsening);
 

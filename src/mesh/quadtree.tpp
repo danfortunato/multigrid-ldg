@@ -6,7 +6,8 @@ namespace DG
 {
     /** @brief Construct a node and its children */
     template<int N>
-    void Quadtree<N>::build(int id, int level)
+    template<typename T>
+    void Quadtree<N>::build(int id, int level, const T& h)
     {
         numLevels_ = std::max(level+1,numLevels_);
         tree[id].level = level;
@@ -28,7 +29,7 @@ namespace DG
                 Node node(Cell<N>(lower,upper),next,id);
                 tree.push_back(node);
                 tree[id].children(it.index()) = next;
-                build(next,level+1);
+                build(next, level+1, h);
             }
             // Set height
             for (NDArrayIterator<int,2,N> it = tree[id].children.begin(); it != tree[id].children.end(); ++it) {
@@ -98,7 +99,8 @@ namespace DG
 
     /** @brief Search the tree with pruning based on a condition */
     template<int N>
-    void Quadtree<N>::search(std::function<bool(const Node&)> cond, std::function<void(const Node&)> accum, int id, int coarsening) const
+    template<typename T1, typename T2>
+    void Quadtree<N>::search(const T1& cond, const T2& accum, int id, int coarsening) const
     {
         if (cond(tree[id])) {
             if (!isLeaf(tree[id], coarsening)) {
@@ -113,7 +115,8 @@ namespace DG
 
     /** @brief DFS helper */
     template<int N>
-    void Quadtree<N>::dfs(std::function<void(const Node&)> f, int id, int coarsening) const
+    template<typename T>
+    void Quadtree<N>::dfs(const T& f, int id, int coarsening) const
     {
         f(tree[id]);
         if (!isLeaf(tree[id], coarsening)) {
@@ -125,7 +128,8 @@ namespace DG
 
     /** @brief Apply f to the tree in a breadth-first order */
     template<int N>
-    void Quadtree<N>::bfs(std::function<void(const Node&)> f, int coarsening) const
+    template<typename T>
+    void Quadtree<N>::bfs(const T& f, int coarsening) const
     {
         std::queue<int> q;
         q.push(0);

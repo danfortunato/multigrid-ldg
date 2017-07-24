@@ -22,7 +22,7 @@ namespace DG
     struct BoundaryCondition
     {
         BoundaryCondition(BoundaryType type_, double value = 0) : type(type_), f([value](Tuple<double,N>) { return value; }) {}
-        BoundaryCondition(BoundaryType type_, std::function<double(Tuple<double,N>)> f_) : type(type_), f(f_) {}
+        BoundaryCondition(BoundaryType type_, const std::function<double(Tuple<double,N>)>& f_) : type(type_), f(f_) {}
         BoundaryType type;
         std::function<double(Tuple<double,N>)> f;
     };
@@ -50,7 +50,7 @@ namespace DG
         }
 
         /** Construct given Dirichlet conditions for a mesh */
-        static BoundaryConditions<P,N> Dirichlet(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
+        static BoundaryConditions<P,N> Dirichlet(const Mesh<P,N>& mesh_, const std::function<double(Tuple<double,N>)>& f)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kDirichlet, f));
         }
@@ -62,7 +62,7 @@ namespace DG
         }
 
         /** Construct given Neumann conditions for a mesh */
-        static BoundaryConditions<P,N> Neumann(const Mesh<P,N>& mesh_, std::function<double(Tuple<double,N>)> f)
+        static BoundaryConditions<P,N> Neumann(const Mesh<P,N>& mesh_, const std::function<double(Tuple<double,N>)>& f)
         {
             return BoundaryConditions<P,N>(mesh_, BoundaryCondition<P,N>(kNeumann, f));
         }

@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <stdexcept>
-#include <functional>
 #include "common.h"
 #include "ndarray.h"
 
@@ -116,24 +115,24 @@ namespace DG
                 NDArray<int,2,N> children;
             };
 
-            Quadtree(std::function<Tuple<double,N>(Tuple<double,N>)> h_, bool periodic_ = false) :
-                h(h_),
+            template<typename T>
+            Quadtree(const T& h, bool periodic_ = false) :
                 numLevels_(1),
                 coarseningStrategy_(kEqualCoarsening),
                 periodic(periodic_)
             {
                 tree.push_back(Node(Cell<N>(),0,-1));
-                build(0,0);
+                build(0, 0, h);
             }
 
-            Quadtree(Cell<N> domain, std::function<Tuple<double,N>(Tuple<double,N>)> h_, bool periodic_ = false) :
-                h(h_),
+            template<typename T>
+            Quadtree(Cell<N> domain, const T& h, bool periodic_ = false) :
                 numLevels_(1),
                 coarseningStrategy_(kEqualCoarsening),
                 periodic(periodic_)
             {
                 tree.push_back(Node(domain,0,-1));
-                build(0,0);
+                build(0, 0, h);
             }
 
             int size() const
@@ -190,14 +189,17 @@ namespace DG
              *         and direction */
             std::vector<int> neighbors(int id, int dim, Direction dir, int coarsening = 0) const;
             /** @brief Apply f to the tree in a depth-first order */
-            void dfs(std::function<void(const Node&)> f, int coarsening = 0) const
+            template<typename T>
+            void dfs(const T& f, int coarsening = 0) const
             {
                 dfs(f, 0, coarsening);
             }
             /** @brief Apply f to the tree in a breadth-first order */
-            void bfs(std::function<void(const Node&)> f, int coarsening = 0) const;
+            template<typename T>
+            void bfs(const T& f, int coarsening = 0) const;
             /** @brief Search the tree with pruning based on a condition */
-            void search(std::function<bool(const Node&)> cond, std::function<void(const Node&)> accum, int id, int coarsening = 0) const;
+            template<typename T1, typename T2>
+            void search(const T1& cond, const T2& accum, int id, int coarsening = 0) const;
             /** @brief Is node B a neighbor of node A? */
             bool isNeighbor(const Node& a, const Node& b, int dim, Direction dir) const;
             /** @brief Is node B a parent of node A? */
@@ -205,13 +207,13 @@ namespace DG
 
         private:
             /** @brief Construct a node and its children */
-            void build(int id, int level);
+            template<typename T>
+            void build(int id, int level, const T& h);
             /** @brief DFS helper */
-            void dfs(std::function<void(const Node&)> f, int id, int coarsening) const;
+            template<typename T>
+            void dfs(const T& f, int id, int coarsening) const;
             /** @brief The nodes in the tree */
             std::vector<Node> tree;
-            /** @brief Refinement function */
-            std::function<Tuple<double,N>(Tuple<double,N>)> h;
             /** @brief The number of levels in the tree */
             int numLevels_;
             /** @brief Coarsening strategy */
