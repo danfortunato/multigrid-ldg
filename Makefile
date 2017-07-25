@@ -67,4 +67,4 @@ clean:
 #.PHONY: clean all executables depend
 .PHONY: clean all checkdirs executables depend
 
-$(foreach bdir,$(BUILDDIR),$(eval $(call make-goal,$(bdir))))
+	$(foreach bdir,$(BUILDDIR),$(eval $(call make-goal,$(bdir))))
