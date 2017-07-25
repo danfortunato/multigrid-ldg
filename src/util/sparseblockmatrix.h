@@ -213,6 +213,6 @@ namespace DG
     };
 }
 
-#include "SparseBlockMatrix.tpp"
+#include "sparseblockmatrix.tpp"
 
 #endif

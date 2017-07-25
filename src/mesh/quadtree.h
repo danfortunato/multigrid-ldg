@@ -223,6 +223,6 @@ namespace DG
     };
 }
 
-#include "Quadtree.tpp"
+#include "quadtree.tpp"
 
 #endif
