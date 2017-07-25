@@ -8,6 +8,7 @@
 #include "function.h"
 #include "boundaryconditions.h"
 #include "ldgpoisson.h"
+#include "timer.h"
 
 int main(int argc, char* argv[])
 {
@@ -27,8 +28,14 @@ int main(int argc, char* argv[])
     if (argc >= 4) tauD   = atof(argv[4]);
 
     auto h = [dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
+
+    DG::Timer::tic();
     DG::Quadtree<N> qt(h, bctype == DG::kPeriodic);
+    DG::Timer::toc("Build quadtree");
+
+    DG::Timer::tic();
     DG::Mesh<P,N> mesh(qt, coarsening);
+    DG::Timer::toc("Build mesh");
 
     DG::BoundaryConditions<P,N> bcs(mesh);
     std::function<double(DG::Tuple<double,N>)> ufun, ffun;
@@ -59,12 +66,17 @@ int main(int argc, char* argv[])
 
     // Discretize and solve
     DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
+
+    DG::Timer::tic();
     DG::Function<P,N> u = poisson.solve(f);
+    DG::Timer::toc("Poisson solve");
 
     // Output the data
+    DG::Timer::tic();
     u.write("data/u.fun");
     u_true.write("data/u_true.fun");
     poisson.dump();
+    DG::Timer::toc("Output data");
 
     return 0;
 }

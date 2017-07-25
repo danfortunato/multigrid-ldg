@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "sparseblockmatrix.h"
+#include "timer.h"
 
 namespace DG
 {
@@ -20,6 +21,8 @@ namespace DG
     template<int P, typename VectorType, typename PreconditionerType>
     void pcg(const SparseBlockMatrix<P>& A, const VectorType& b, VectorType& x, PreconditionerType&& precon, double tol=1e-8, int maxit=200)
     {
+        Timer::tic();
+
         int i;
         double delta_0, delta_new, delta_old, alpha, beta;
         Vector r, d, q, s;
@@ -48,6 +51,8 @@ namespace DG
             d = s + beta * d;
             ++i;
         }
+
+        Timer::toc("Solve using PCG");
     }
 
     /** @brief Conjugate gradient

@@ -10,6 +10,7 @@
 #include "master.h"
 #include "ndarray.h"
 #include "range.h"
+#include "timer.h"
 
 namespace DG
 {
@@ -202,6 +203,7 @@ namespace DG
                 boundaryIndices.push_back(-(index+1));
             }
 
+            Timer::tic();
             // Get the global IDs of the elements in the specified layer
             std::vector<int> ids = qt.layer(coarsening);
 
@@ -214,7 +216,9 @@ namespace DG
                 Element<P,N> elem(*this, lid, gid, qt[gid].cell);
                 elements.push_back(elem);
             }
+            Timer::toc("Construct elements");
 
+            Timer::tic();
             nb = 0;
             // Construct the faces from the neighbors of each element
             for (auto& elem : elements) {
@@ -265,6 +269,7 @@ namespace DG
                     }
                 }
             }
+            Timer::toc("Construct faces");
 
             ne = elements.size();
             nf = faces.size();

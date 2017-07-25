@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include "range.h"
 #include "krylov.h"
+#include "timer.h"
 
 namespace DG
 {
@@ -13,16 +14,20 @@ namespace DG
     template<int P, int N>
     void LDGPoisson<P,N>::discretize()
     {
+        Timer::tic();
         construct_mass_matrix();
         construct_broken_gradient();
         construct_lifting_terms();
         construct_laplacian();
+        Timer::toc("Discretize");
     }
 
     /** @brief Construct the block diagonal mass matrices */
     template<int P, int N>
     void LDGPoisson<P,N>::construct_mass_matrix()
     {
+        Timer::tic();
+
         for (const auto& e : mesh->elements) {
             int j = e.lid;
             M_builder.setBlock(j, j, e.mass());
@@ -31,12 +36,16 @@ namespace DG
                 MM_builder.setBlock(k, k, e.mass());
             }
         }
+
+        Timer::toc("Construct mass matrix");
     }
 
     /** @brief Construct the broken gradient operator */
     template<int P, int N>
     void LDGPoisson<P,N>::construct_broken_gradient()
     {
+        Timer::tic();
+
         KronMat<P,N> diff;
         // Create the differentiation matrix in each dimension
         for (int i=0; i<N; ++i) {
@@ -70,12 +79,16 @@ namespace DG
                 G_builder.addToBlock(N*j+i, j, jac*diff);
             }
         }
+
+        Timer::toc("Construct broken gradient");
     }
 
     /** @brief Construct the lifting operator and penalty terms */
     template<int P, int N>
     void LDGPoisson<P,N>::construct_lifting_terms()
     {
+        Timer::tic();
+
         KronMat<P,N> LL, RR, RL, MinvR, MinvL;
 
         for (const auto& f : mesh->faces) {
@@ -106,27 +119,39 @@ namespace DG
                 T_builder.addToBlock(f.left, f.left, tauD * LL);
             }
         }
+
+        Timer::toc("Construct lifting terms");
     }
 
     /** @brief Construct the discrete Laplacian operator */
     template<int P, int N>
     void LDGPoisson<P,N>::construct_laplacian()
     {
+        Timer::tic();
+
+        Timer::tic();
         MM = MM_builder.build();
         G  = G_builder.build();
         T  = T_builder.build();
+        Timer::toc("Compress matrices");
 
         // Compute the discrete Laplacian: A = G^T M G + T
+        Timer::tic();
         SparseBlockMatrix<npl> temp;
         multiply_mm_t(G, MM, A);
         multiply_mm(A, G, temp);
         add_mm(1.0, temp, T, A);
+        Timer::toc("Matrix arithmetic");
+
+        Timer::toc("Construct Laplacian");
     }
 
     /** @brief Compute the contribution of the boundary conditions to the RHS */
     template<int P, int N>
     void LDGPoisson<P,N>::add_source_terms()
     {
+        Timer::tic();
+
         FaceQuadMat<P,Q,N> L;
         KronVec<Q,N-1> bc;
 
@@ -168,6 +193,8 @@ namespace DG
                 }
             }
         }
+
+        Timer::toc("Add source terms");
     }
 
     /** @brief Solve the linear system
@@ -183,9 +210,11 @@ namespace DG
         add_source_terms();
 
         // Add the forcing function and Dirichlet contribution to the RHS
+        Timer::tic();
         M = M_builder.build();
         multiply_add_mv(   1.0, M,  f.data(), 1.0, rhs.data());
         multiply_add_mv_t(-1.0, G, Jg.data(), 1.0, rhs.data());
+        Timer::toc("Computing RHS");
 
         // Solve using PCG
         Function<P,N> u(*mesh);
