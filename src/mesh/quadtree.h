@@ -45,8 +45,8 @@ namespace DG
 
         /** @brief Compute the width of the cell in the dimension d */
         double width(int d) const {
-            if (d >= N) {
-                throw std::invalid_argument("Requested dimension too large.");
+            if (d < 0 || d > N) {
+                throw std::out_of_range("Requested dimension does not exist.");
             }
             return upper[d]-lower[d];
         }
