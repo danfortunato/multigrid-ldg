@@ -2,6 +2,7 @@
 #define SPARSE_BLOCK_MATRIX_H
 
 #include <unordered_map> // std::unordered_map
+#include <unordered_set> // std::unordered_set
 #include <stdexcept>     // std::out_of_range
 #include <string>        // std::string
 #include "common.h"
@@ -195,6 +196,9 @@ namespace DG
 
             /** Write the matrix to a file (in Matrix Market format) */
             void write(const std::string& file) const;
+
+            /** @brief Indices of the nonzero columns/rows in each row/column. */
+            std::unordered_map<int, std::unordered_set<int>> rows_, cols_;
 
         private:
 

@@ -556,12 +556,8 @@ namespace DG
     const typename SparseBlockMatrixBuilder<P>::Block&
     SparseBlockMatrixBuilder<P>::getBlock(int i, int j)
     {
-        if (blockExists(i,j)) {
-            Index index(i,j);
-            return blockMap_.at(index);
-        } else {
-            return zero_;
-        }
+        assert(blockExists(i,j));
+        return blockMap_[Index(i,j)];
     }
 
     /** @brief Set a block
@@ -573,8 +569,9 @@ namespace DG
     template<int P>
     void SparseBlockMatrixBuilder<P>::setBlock(int i, int j, const Block& block)
     {
-        Index index(i,j);
-        blockMap_[index] = block;
+        blockMap_[Index(i,j)] = block;
+        rows_[i].insert(j);
+        cols_[j].insert(i);
     }
 
     /** @brief Add to a block
@@ -586,11 +583,10 @@ namespace DG
     template<int P>
     void SparseBlockMatrixBuilder<P>::addToBlock(int i, int j, const Block& block)
     {
-        Index index(i,j);
         if (blockExists(i,j)) {
-            blockMap_[index] += block;
+            blockMap_[Index(i,j)] += block;
         } else {
-            blockMap_[index] = block;
+            setBlock(i, j, block);
         }
     }
 
@@ -602,11 +598,8 @@ namespace DG
     template<int P>
     bool SparseBlockMatrixBuilder<P>::blockExists(int i, int j)
     {
-        if (i < 0 || i >= m_ || j < 0 || j >= n_) {
-            throw std::out_of_range("Block index is out of range");
-        }
-        Index index(i,j);
-        return blockMap_.count(index) > 0;
+        assert(i >= 0 || i < m_ || j >= 0 || j < n_);
+        return blockMap_.count(Index(i,j)) > 0;
     }
 
     /** @brief Convert to MKL representation */
