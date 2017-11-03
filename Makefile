@@ -3,11 +3,42 @@ MKLROOT   = $(INTELROOT)/mkl
 
 CC     = gcc-7
 CXX    = g++-7
-CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -g -std=c++17 -O3 -fopenmp
-CFLAGS += -DNDEBUG
+CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -std=c++17 -O3 -march=native
 INCDIR = -I.. -I$(MKLROOT)/include
-LIBDIR = -L$(INTELROOT)/lib -L$(MKLROOT)/lib -Wl,-rpath,$(MKLROOT)/lib,-rpath,$(INTELROOT)/lib
-LIB    = -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
+LIBDIR =
+LIB    = -lmkl_intel_lp64 -lmkl_core -lm -ldl
+
+ifndef BUILD
+	BUILD = debug
+endif
+
+ifndef THREADS
+	THREADS = 1
+endif
+
+# Type of build
+ifeq ($(BUILD),debug)
+	CFLAGS += -g -DDEBUG
+else ifeq ($(BUILD),release)
+	CFLAGS += -DNDEBUG
+endif
+
+# Number of threads to use
+ifeq ($(THREADS),1)
+	CFLAGS += -DMKL_THREADING_LAYER=sequential -DMKL_NUM_THREADS=1 -DMKL_DYNAMIC="FALSE" -DMKL_DOMAIN_NUM_THREADS="MKL_DOMAIN_ALL=1, MKL_DOMAIN_BLAS=1" -DOMP_NUM_THREADS=1 -DOMP_DYNAMIC="FALSE"
+	LIB += -lmkl_sequential
+else
+	CFLAGS += -fopenmp -DMKL_NUM_THREADS=$(THREADS) -DMKL_DYNAMIC="TRUE" -DMKL_DOMAIN_NUM_THREADS="MKL_DOMAIN_ALL=$(THREADS), MKL_DOMAIN_BLAS=$(THREADS)" -DOMP_NUM_THREADS=$(THREADS) -DOMP_DYNAMIC="TRUE"
+	LIB += -lmkl_intel_thread -liomp5 -lpthread
+endif
+
+# MKL directories on Mac and Linux are different
+OS := $(shell uname)
+ifeq ($(OS),Darwin)
+	LIBDIR += -L$(INTELROOT)/lib -L$(MKLROOT)/lib -Wl,-rpath,$(MKLROOT)/lib,-rpath,$(INTELROOT)/lib
+else ifeq ($(OS),Linux)
+	LIBDIR += -L$(INTELROOT)/lib/intel64 -L$(MKLROOT)/lib/intel64 -Wl,--no-as-needed
+endif
 
 BINDIR    = bin
 BUILDROOT = build

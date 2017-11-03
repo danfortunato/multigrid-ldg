@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <limits>
+#include <memory>
 #include "common.h"
 #include "mesh.h"
 #include "boundaryconditions.h"
@@ -11,6 +12,42 @@
 
 namespace DG
 {
+    template<int P, int N>
+    struct LDGOperators
+    {
+        /** @brief The number of nodal points per element */
+        static const int npl = Master<P,N>::npl;
+        /** @brief Mass matrix */
+        SparseBlockMatrixBuilder<npl> M;
+        /** @brief Discrete gradient */
+        std::array<SparseBlockMatrixBuilder<npl>,N> G;
+        /** @brief Penalty parameters */
+        SparseBlockMatrixBuilder<npl> T;
+        /** @brief Discrete Laplacian */
+        SparseBlockMatrix<npl> A;
+
+        /** @brief Construct the discrete Laplacian operator: A = G^T M G + T */
+        void construct_laplacian()
+        {
+            Timer::tic();
+            KronMat<P,N> GT_M, GT_M_G;
+            for (int d = 0; d < N; ++d) {
+                for (int k = 0; k < M.blockRows(); ++k) {
+                    const auto& cols = G[d].rows_[k];
+                    for (int i : cols) {
+                        GT_M = (G[d].getBlock(k, i).transpose() * M.getBlock(k, k)).eval();
+                        for (int j : cols) {
+                            GT_M_G = GT_M * G[d].getBlock(k, j);
+                            T.addToBlock(i, j, GT_M_G);
+                        }
+                    }
+                }
+            }
+            A = T.build();
+            Timer::toc("Construct Laplacian");
+        }
+    };
+
     template<int P, int N>
     class LDGPoisson
     {
@@ -21,14 +58,16 @@ namespace DG
                 bcs(bcs_),
                 tau0(tau0_),
                 tauD(tauD_),
-                Jg(Vector::Zero(mesh->ne * npl * N)),
+                ops_(std::make_shared<LDGOperators<P,N>>()),
                 rhs(mesh_, 0)
             {
                 // Reset the builders to be the correct size
-                M_builder.reset(mesh->ne, mesh->ne);
-                MM_builder.reset(N * mesh->ne, N * mesh->ne);
-                G_builder.reset(N * mesh->ne, mesh->ne);
-                T_builder.reset(mesh->ne, mesh->ne);
+                ops_->M.reset(mesh->ne, mesh->ne);
+                ops_->T.reset(mesh->ne, mesh->ne);
+                for (int d=0; d<N; ++d) {
+                    ops_->G[d].reset(mesh->ne, mesh->ne);
+                    Jg[d].setZero(mesh->ne * npl);
+                }
 
                 discretize();
             }
@@ -49,10 +88,21 @@ namespace DG
              */
             Function<P,N> solve(Function<P,N>& f);
 
+            /** @brief Get the operators */
+            std::shared_ptr<LDGOperators<P,N>> ops()
+            {
+                return ops_;
+            }
+
             /** @brief Dump the matrices */
             void dump()
             {
-                A.write("data/A.mtx");
+                ops_->A.write("data/A.mtx");
+                ops_->M.write("data/M.mtx");
+                ops_->T.write("data/T.mtx");
+                for (int i=0; i<N; ++i) {
+                    ops_->G[i].write("data/G" + std::to_string(i) + ".mtx");
+                }
                 rhs.write("data/rhs.fun");
             }
 
@@ -73,20 +123,10 @@ namespace DG
             static const int p = P-1;
             /** @brief The number of nodal points per element */
             static const int npl = Master<P,N>::npl;
-            /** @brief Mass matrix */
-            SparseBlockMatrix<npl> M;
-            /** @brief Mass matrix (for vectors) */
-            SparseBlockMatrix<npl> MM;
-            /** @brief Discrete gradient */
-            SparseBlockMatrix<npl> G;
-            /** @brief Penalty parameters */
-            SparseBlockMatrix<npl> T;
-            /** @brief Discrete Laplacian */
-            SparseBlockMatrix<npl> A;
-            /** @brief Helper for building the sparse block matrices */
-            SparseBlockMatrixBuilder<npl> M_builder, MM_builder, G_builder, T_builder;
+            /** @brief The LDG operators */
+            std::shared_ptr<LDGOperators<P,N>> ops_;
             /** @brief Dirichlet contribution to RHS */
-            Vector Jg;
+            std::array<Vector,N> Jg;
             /** @brief Right-hand side */
             Function<P,N> rhs;
     };

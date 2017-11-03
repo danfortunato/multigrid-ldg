@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         case DG::kPeriodic:
             ufun = [](DG::Tuple<double,N> x) { return sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
             ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
-            DG::BoundaryConditions<P,N>::Periodic(mesh);
+            bcs = DG::BoundaryConditions<P,N>::Periodic(mesh);
             break;
         default:
             throw std::invalid_argument("Unknown boundary condition.");

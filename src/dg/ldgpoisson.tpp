@@ -18,7 +18,7 @@ namespace DG
         construct_mass_matrix();
         construct_broken_gradient();
         construct_lifting_terms();
-        construct_laplacian();
+        ops_->construct_laplacian();
         Timer::toc("Discretize");
     }
 
@@ -30,11 +30,7 @@ namespace DG
 
         for (const auto& e : mesh->elements) {
             int j = e.lid;
-            M_builder.setBlock(j, j, e.mass());
-            for (int i=0; i<N; ++i) {
-                int k = N*j+i;
-                MM_builder.setBlock(k, k, e.mass());
-            }
+            ops_->M.setBlock(j, j, e.mass());
         }
 
         Timer::toc("Construct mass matrix");
@@ -76,7 +72,7 @@ namespace DG
             for (const auto& e : mesh->elements) {
                 int j = e.lid;
                 double jac = 1/e.cell.width(i);
-                G_builder.addToBlock(N*j+i, j, jac*diff);
+                ops_->G[i].addToBlock(j, j, jac*diff);
             }
         }
 
@@ -100,50 +96,27 @@ namespace DG
             // component of the normal dot product is the in dimension this face
             // lives on
             double n = f.normal[f.dim];
-            MinvL = mesh->elements[f.left].invmass();
-            MinvR = mesh->elements[f.right].invmass();
 
             if (f.interiorQ()) {
+                MinvR = mesh->elements[f.right].invmass();
                 // Lifting operator
-                G_builder.addToBlock(N*f.right+f.dim, f.right, n * MinvR * RR);
-                G_builder.addToBlock(N*f.right+f.dim, f.left, -n * MinvR * RL);
+                ops_->G[f.dim].addToBlock(f.right, f.right, n * MinvR * RR);
+                ops_->G[f.dim].addToBlock(f.right, f.left, -n * MinvR * RL);
                 // Penalty terms
-                T_builder.addToBlock(f.right, f.right,  tau0 * RR);
-                T_builder.addToBlock(f.left,  f.left,   tau0 * LL);
-                T_builder.addToBlock(f.right, f.left,  -tau0 * RL);
-                T_builder.addToBlock(f.left,  f.right, -tau0 * RL.transpose());
+                ops_->T.addToBlock(f.right, f.right,  tau0 * RR);
+                ops_->T.addToBlock(f.left,  f.left,   tau0 * LL);
+                ops_->T.addToBlock(f.right, f.left,  -tau0 * RL);
+                ops_->T.addToBlock(f.left,  f.right, -tau0 * RL.transpose());
             } else if (bcs.bcmap.at(f.boundary()).type == kDirichlet) {
+                MinvL = mesh->elements[f.left].invmass();
                 // Lifting operator
-                G_builder.addToBlock(N*f.left+f.dim, f.left, -n * MinvL * LL);
+                ops_->G[f.dim].addToBlock(f.left, f.left, -n * MinvL * LL);
                 // Penalty terms
-                T_builder.addToBlock(f.left, f.left, tauD * LL);
+                ops_->T.addToBlock(f.left, f.left, tauD * LL);
             }
         }
 
         Timer::toc("Construct lifting terms");
-    }
-
-    /** @brief Construct the discrete Laplacian operator */
-    template<int P, int N>
-    void LDGPoisson<P,N>::construct_laplacian()
-    {
-        Timer::tic();
-
-        Timer::tic();
-        MM = MM_builder.build();
-        G  = G_builder.build();
-        T  = T_builder.build();
-        Timer::toc("Compress matrices");
-
-        // Compute the discrete Laplacian: A = G^T M G + T
-        Timer::tic();
-        SparseBlockMatrix<npl> temp;
-        multiply_mm_t(G, MM, A);
-        multiply_mm(A, G, temp);
-        add_mm(1.0, temp, T, A);
-        Timer::toc("Matrix arithmetic");
-
-        Timer::toc("Construct Laplacian");
     }
 
     /** @brief Compute the contribution of the boundary conditions to the RHS */
@@ -180,7 +153,7 @@ namespace DG
                 switch (bcs.bcmap.at(f.boundary()).type) {
                     case kDirichlet:
                         // Dirichlet contribution to RHS
-                        Jg.segment<npl>(npl*(N*f.left+f.dim)) += n * L * bc;
+                        Jg[f.dim].template segment<npl>(npl*f.left) += n * L * bc;
                         // Dirichlet penalty contribution to RHS
                         rhs.vec(f.left) += tauD * L * bc;
                         break;
@@ -211,16 +184,22 @@ namespace DG
 
         // Add the forcing function and Dirichlet contribution to the RHS
         Timer::tic();
-        M = M_builder.build();
-        multiply_add_mv(   1.0, M,  f.data(), 1.0, rhs.data());
-        multiply_add_mv_t(-1.0, G, Jg.data(), 1.0, rhs.data());
+        for (const auto& e : mesh->elements) {
+            int elem = e.lid;
+            rhs.vec(elem) += (e.mass() * f.vec(elem)).eval();
+            for (int d=0; d<N; ++d) {
+                for (int i : ops_->G[d].cols_[elem]) {
+                    rhs.vec(elem) -= ops_->G[d].getBlock(i, elem).transpose() * Jg[d].template segment<npl>(npl*i);
+                }
+            }
+        }
         Timer::toc("Computing RHS");
 
         // Solve using PCG
         Function<P,N> u(*mesh);
         auto uvec = u.vec();
         auto rvec = rhs.vec();
-        pcg(A, rvec, uvec);
+        pcg(ops_->A, rvec, uvec);
 
         return u;
     }
