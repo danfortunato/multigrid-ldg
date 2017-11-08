@@ -188,7 +188,7 @@ namespace DG
             int elem = e.lid;
             rhs.vec(elem) += (e.mass() * f.vec(elem)).eval();
             for (int d=0; d<N; ++d) {
-                for (int i : ops_->G[d].cols_[elem]) {
+                for (int i : ops_->G[d].rowsInCol(elem)) {
                     rhs.vec(elem) -= ops_->G[d].getBlock(i, elem).transpose() * Jg[d].template segment<npl>(npl*i);
                 }
             }
