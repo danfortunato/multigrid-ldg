@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     if (argc >= 2) dx     = atof(argv[1]);
     if (argc >= 3) bctype = (DG::BoundaryType)atoi(argv[2]);
     if (argc >= 4) tau0   = atof(argv[3]);
-    if (argc >= 4) tauD   = atof(argv[4]);
+    if (argc >= 5) tauD   = atof(argv[4]);
 
     auto h = [dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
 
