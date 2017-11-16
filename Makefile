@@ -3,7 +3,7 @@ MKLROOT   = $(INTELROOT)/mkl
 
 CC     = gcc-7
 CXX    = g++-7
-CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -std=c++17 -O3 -march=native
+CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -std=c++17 -march=native
 INCDIR = -I.. -I$(MKLROOT)/include
 LIBDIR =
 LIB    = -lmkl_intel_lp64 -lmkl_core -lm -ldl
@@ -18,9 +18,9 @@ endif
 
 # Type of build
 ifeq ($(BUILD),debug)
-	CFLAGS += -g -DDEBUG
+	CFLAGS += -g -Og -DDEBUG
 else ifeq ($(BUILD),release)
-	CFLAGS += -DNDEBUG
+	CFLAGS += -O3 -DNDEBUG
 endif
 
 # Number of threads to use
