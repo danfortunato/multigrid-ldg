@@ -17,8 +17,12 @@ namespace DG
     {
         /** @brief The number of nodal points per element */
         static const int npl = Master<P,N>::npl;
+        /** @brief The type of the matrix blocks */
+        typedef typename SparseBlockMatrix<npl>::Block Block;
         /** @brief Mass matrix */
         SparseBlockMatrix<npl> M;
+        /** @brief The Cholesky decomposition for mass matrix */
+        std::vector<Eigen::LDLT<Block>> Minv;
         /** @brief Discrete gradient */
         std::array<SparseBlockMatrix<npl>,N> G;
         /** @brief Penalty parameters */
@@ -80,13 +84,11 @@ namespace DG
              */
             void discretize();
 
-            /** @brief Solve the linear system
-             *
-             *  @pre discretize() must be called before solve().
+            /** @brief Add the forcing function to the RHS
              *
              *  @param[in] f : The forcing function
              */
-            Function<P,N> solve(Function<P,N>& f);
+            Function<P,N> computeRHS(Function<P,N>& f);
 
             /** @brief Get the operators */
             std::shared_ptr<LDGOperators<P,N>> ops()

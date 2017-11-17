@@ -5,9 +5,9 @@
 #define EIGEN_STACK_ALLOCATION_LIMIT 1000000
 #define MKL_ALIGN 64
 
-#include <Eigen/Dense>   // Eigen
-#include <mkl.h>         // MKL
-#include <mkl_spblas.h>  // MKL routines
+#include <Eigen/Dense>
+#include <Eigen/Cholesky>
+#include <mkl.h>
 
 namespace DG
 {

@@ -19,6 +19,7 @@ namespace DG
         construct_broken_gradient();
         construct_lifting_terms();
         ops_->construct_laplacian();
+        add_source_terms();
         Timer::toc("Discretize");
     }
 
@@ -31,6 +32,7 @@ namespace DG
         for (const auto& e : mesh->elements) {
             int j = e.lid;
             ops_->M.setBlock(j, j, e.mass());
+            ops_->Minv.emplace_back(e.mass());
         }
 
         Timer::toc("Construct mass matrix");
@@ -167,41 +169,31 @@ namespace DG
             }
         }
 
-        Timer::toc("Add source terms");
-    }
-
-    /** @brief Solve the linear system
-     *
-     *  @pre discretize() must be called before solve().
-     *
-     *  @param[in] f : The forcing function
-     */
-    template<int P, int N>
-    Function<P,N> LDGPoisson<P,N>::solve(Function<P,N>& f)
-    {
-        // Compute the contribution of the boundary conditions to the RHS
-        add_source_terms();
-
-        // Add the forcing function and Dirichlet contribution to the RHS
-        Timer::tic();
+        // Dirichlet contribution to the RHS
         for (const auto& e : mesh->elements) {
             int elem = e.lid;
-            rhs.vec(elem) += (e.mass() * f.vec(elem)).eval();
             for (int d=0; d<N; ++d) {
                 for (int i : ops_->G[d].rowsInCol(elem)) {
                     rhs.vec(elem) -= ops_->G[d].getBlock(i, elem).transpose() * Jg[d].template segment<npl>(npl*i);
                 }
             }
         }
-        Timer::toc("Computing RHS");
 
-        // Solve using PCG
-        Function<P,N> u(*mesh);
-        auto uvec = u.vec();
-        auto rvec = rhs.vec();
-        pcg(ops_->A, rvec, uvec);
-
-        return u;
+        Timer::toc("Add source terms");
     }
 
+    /** @brief Add the forcing function to the RHS
+     *
+     *  @param[in] f : The forcing function
+     */
+    template<int P, int N>
+    Function<P,N> LDGPoisson<P,N>::computeRHS(Function<P,N>& f)
+    {
+        Function<P,N> ff(*mesh);
+        for (const auto& e : mesh->elements) {
+            int elem = e.lid;
+            ff.vec(elem) = rhs.vec(elem) + e.mass()*f.vec(elem);
+        }
+        return ff;
+    }
 }

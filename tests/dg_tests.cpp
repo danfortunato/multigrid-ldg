@@ -64,12 +64,17 @@ int main(int argc, char* argv[])
     DG::Function<P,N> f(mesh, ffun);
     if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u_true.meanZero();
 
-    // Discretize and solve
+    // Discretize the Poisson problem
     DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
 
+    // Add the forcing function to the RHS
+    DG::Function<P,N> rhs = poisson.computeRHS(f);
+
+    // Solve with PCG
     DG::Timer::tic();
-    DG::Function<P,N> u = poisson.solve(f);
-    DG::Timer::toc("Poisson solve");
+    DG::Function<P,N> u(mesh);
+    DG::pcg(poisson.ops()->A, rhs.vec(), u.vec());
+    DG::Timer::toc("Solve using PCG");
 
     // Output the data
     DG::Timer::tic();
