@@ -9,6 +9,7 @@
 #include "boundaryconditions.h"
 #include "ldgpoisson.h"
 #include "timer.h"
+#include "multigrid.h"
 
 int main(int argc, char* argv[])
 {
@@ -67,14 +68,27 @@ int main(int argc, char* argv[])
     // Discretize the Poisson problem
     DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
 
+    // Build the multigrid hierarchy
+    DG::Timer::tic();
+    DG::InterpolationHierarchy<P,N> hierarchy(qt);
+    DG::Multigrid<P,N> mg(poisson.ops(), hierarchy);
+    auto precon = [&mg](const DG::Vector& b) {
+        mg.solution().setZero();
+        mg.rhs() = b;
+        mg.vcycle();
+        DG::Vector x = mg.solution();
+        return x;
+    };
+    DG::Timer::toc("Build multigrid hierarchy");
+
     // Add the forcing function to the RHS
     DG::Function<P,N> rhs = poisson.computeRHS(f);
 
-    // Solve with PCG
+    // Solve with MGPCG
     DG::Timer::tic();
     DG::Function<P,N> u(mesh);
-    DG::pcg(poisson.ops()->A, rhs.vec(), u.vec());
-    DG::Timer::toc("Solve using PCG");
+    DG::pcg(poisson.ops()->A, rhs.vec(), u.vec(), precon);
+    DG::Timer::toc("Solve using MGPCG");
 
     // Output the data
     DG::Timer::tic();
