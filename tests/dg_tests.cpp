@@ -70,8 +70,8 @@ int main(int argc, char* argv[])
 
     // Build the multigrid hierarchy
     DG::Timer::tic();
-    DG::InterpolationHierarchy<N,P> hierarchy(qt);
-    DG::Multigrid<N,P> mg(poisson.ops(), hierarchy);
+    DG::InterpolationHierarchy<N,P,P-1,P-2> hierarchy(qt);
+    DG::Multigrid<N,P,P-1,P-2> mg(poisson.ops(), hierarchy);
     auto precon = [&mg](const DG::Vector& b) {
         mg.solution().setZero();
         mg.rhs() = b;
