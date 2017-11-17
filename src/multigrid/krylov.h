@@ -1,9 +1,9 @@
 #ifndef KRYLOV_H
 #define KRYLOV_H
 
+#include <iosfwd>
 #include "common.h"
 #include "sparseblockmatrix.h"
-#include "timer.h"
 
 namespace DG
 {
@@ -21,8 +21,6 @@ namespace DG
     template<int P, typename VectorType, typename PreconditionerType>
     void pcg(const SparseBlockMatrix<P>& A, const VectorType& b, VectorType& x, PreconditionerType&& precon, double tol=1e-8, int maxit=200)
     {
-        Timer::tic();
-
         int i;
         double delta_0, delta_new, delta_old, alpha, beta;
         Vector r, d, q, s;
@@ -52,7 +50,11 @@ namespace DG
             ++i;
         }
 
-        Timer::toc("Solve using PCG");
+        if (delta_new <= tol * tol * delta_0) {
+            std::cout << "PCG: Converged to tolerance " << tol << " in " << i << " iterations." << std::endl;
+        } else {
+            std::cout << "PCG: Failed to converge to tolerance " << tol << " in " << maxit << " iterations." << std::endl;
+        }
     }
 
     /** @brief Conjugate gradient

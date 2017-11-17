@@ -17,12 +17,16 @@ namespace DG
     {
         /** @brief The number of nodal points per element */
         static const int npl = Master<P,N>::npl;
+        /** @brief The type of the matrix blocks */
+        typedef typename SparseBlockMatrix<npl>::Block Block;
         /** @brief Mass matrix */
-        SparseBlockMatrixBuilder<npl> M;
+        SparseBlockMatrix<npl> M;
+        /** @brief The Cholesky decomposition for mass matrix */
+        std::vector<Eigen::LDLT<Block>> Minv;
         /** @brief Discrete gradient */
-        std::array<SparseBlockMatrixBuilder<npl>,N> G;
+        std::array<SparseBlockMatrix<npl>,N> G;
         /** @brief Penalty parameters */
-        SparseBlockMatrixBuilder<npl> T;
+        SparseBlockMatrix<npl> T;
         /** @brief Discrete Laplacian */
         SparseBlockMatrix<npl> A;
 
@@ -30,20 +34,20 @@ namespace DG
         void construct_laplacian()
         {
             Timer::tic();
+            A = T;
             KronMat<P,N> GT_M, GT_M_G;
             for (int d = 0; d < N; ++d) {
                 for (int k = 0; k < M.blockRows(); ++k) {
-                    const auto& cols = G[d].rows_[k];
+                    const auto& cols = G[d].colsInRow(k);
                     for (int i : cols) {
                         GT_M = (G[d].getBlock(k, i).transpose() * M.getBlock(k, k)).eval();
                         for (int j : cols) {
                             GT_M_G = GT_M * G[d].getBlock(k, j);
-                            T.addToBlock(i, j, GT_M_G);
+                            A.addToBlock(i, j, GT_M_G);
                         }
                     }
                 }
             }
-            A = T.build();
             Timer::toc("Construct Laplacian");
         }
     };
@@ -61,7 +65,7 @@ namespace DG
                 ops_(std::make_shared<LDGOperators<P,N>>()),
                 rhs(mesh_, 0)
             {
-                // Reset the builders to be the correct size
+                // Reset the matrices to be the correct size
                 ops_->M.reset(mesh->ne, mesh->ne);
                 ops_->T.reset(mesh->ne, mesh->ne);
                 for (int d=0; d<N; ++d) {
@@ -80,13 +84,11 @@ namespace DG
              */
             void discretize();
 
-            /** @brief Solve the linear system
-             *
-             *  @pre discretize() must be called before solve().
+            /** @brief Add the forcing function to the RHS
              *
              *  @param[in] f : The forcing function
              */
-            Function<P,N> solve(Function<P,N>& f);
+            Function<P,N> computeRHS(Function<P,N>& f);
 
             /** @brief Get the operators */
             std::shared_ptr<LDGOperators<P,N>> ops()

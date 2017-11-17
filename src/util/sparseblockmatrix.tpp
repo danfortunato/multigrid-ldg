@@ -12,13 +12,7 @@ namespace DG
     template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix() :
         m_(0),
-        n_(0),
-        nnzb_(0),
-        values_(nullptr),
-        columns_(nullptr),
-        rowIndex_(nullptr),
-        mkl_(nullptr),
-        fromMKL_(false)
+        n_(0)
     {}
 
     /** @brief Constructor
@@ -29,114 +23,8 @@ namespace DG
     template<int P>
     SparseBlockMatrix<P>::SparseBlockMatrix(int m, int n) :
         m_(m),
-        n_(n),
-        nnzb_(0),
-        values_(nullptr),
-        columns_(nullptr),
-        rowIndex_(nullptr),
-        mkl_(nullptr),
-        fromMKL_(false)
+        n_(n)
     {}
-
-    /** @brief Constructor
-     *
-     *  @param[in] mkl : Handle to MKL representation of matrix
-     */
-    template<int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(sparse_matrix_t mkl) :
-        mkl_(mkl),
-        fromMKL_(true)
-    {
-        sparse_index_base_t indexing;
-        sparse_layout_t layout;
-        int size, *rowsEnd;
-        MKL_INT m, n;
-
-        sparse_status_t status = mkl_sparse_d_export_bsr(
-            mkl,
-            &indexing,
-            &layout,
-            &m,
-            &n,
-            &size,
-            &rowIndex_,
-            &rowsEnd,
-            &columns_,
-            &values_
-        );
-
-        if (status != SPARSE_STATUS_SUCCESS) {
-            throw std::exception();
-        }
-
-        m_ = (int) m;
-        n_ = (int) n;
-        nnzb_ = rowIndex_[m_];
-    }
-
-    /** @brief Constructor
-     *
-     *  @param[in] m        : The number of block rows
-     *  @param[in] n        : The number of block columns
-     *  @param[in] values   : BSR format for values
-     *  @param[in] columns  : BSR format for block columns
-     *  @param[in] rowIndex : BSR format for row indices
-     */
-    template<int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(int m, int n, double* values, int* columns, int* rowIndex) :
-        m_(m),
-        n_(n),
-        nnzb_(rowIndex[m]),
-        values_(values),
-        columns_(columns),
-        rowIndex_(rowIndex),
-        fromMKL_(false)
-    {
-        // Create the MKL representation
-        if (mkl_sparse_d_create_bsr(
-                &mkl_,
-                SPARSE_INDEX_BASE_ZERO,
-                SPARSE_LAYOUT_ROW_MAJOR,
-                m_,
-                n_,
-                P,
-                (int *)rowIndex_,
-                (int *)rowIndex_ + 1,
-                (int *)columns_,
-                (double *)values_
-            ) != SPARSE_STATUS_SUCCESS) {
-            throw std::exception();
-        }
-
-        // Make sure MKL does not reallocate the arrays
-        if (mkl_sparse_set_memory_hint(mkl_, SPARSE_MEMORY_NONE) != SPARSE_STATUS_SUCCESS) {
-            mkl_sparse_destroy(mkl_);
-            mkl_ = nullptr;
-            throw std::exception();
-        }
-
-        // Optimize the MKL representation
-        if (mkl_sparse_optimize(mkl_) != SPARSE_STATUS_SUCCESS) {
-            mkl_sparse_destroy(mkl_);
-            mkl_ = nullptr;
-            throw std::exception();
-        }
-    }
-
-    /** Destructor */
-    template<int P>
-    SparseBlockMatrix<P>::~SparseBlockMatrix()
-    {
-        if (!fromMKL_) {
-            if (values_)   mkl_free(values_);
-            if (columns_)  mkl_free(columns_);
-            if (rowIndex_) mkl_free(rowIndex_);
-        }
-        if (mkl_) {
-            mkl_sparse_destroy(mkl_);
-            mkl_ = nullptr;
-        }
-    }
 
     /** @brief Copy constructor
      *
@@ -146,47 +34,10 @@ namespace DG
     SparseBlockMatrix<P>::SparseBlockMatrix(const SparseBlockMatrix<P>& other) :
         m_(other.m_),
         n_(other.n_),
-        nnzb_(other.nnzb_),
-        fromMKL_(false)
-    {
-        values_   = (double *) mkl_malloc(nnz()  * sizeof(double), MKL_ALIGN);
-        columns_  = (int *)    mkl_malloc(nnzb() * sizeof(int),    MKL_ALIGN);
-        rowIndex_ = (int *)    mkl_malloc((m_+1) * sizeof(int),    MKL_ALIGN);
-
-        std::copy(values_,   values_ + nnz(),   other.values_);
-        std::copy(columns_,  columns_ + nnzb(), other.columns_);
-        std::copy(rowIndex_, rowIndex_ + m_+1,  other.rowIndex_);
-
-        // Create the MKL representation
-        if (mkl_sparse_d_create_bsr(
-                &mkl_,
-                SPARSE_INDEX_BASE_ZERO,
-                SPARSE_LAYOUT_ROW_MAJOR,
-                m_,
-                n_,
-                P,
-                (int *)rowIndex_,
-                (int *)rowIndex_ + 1,
-                (int *)columns_,
-                (double *)values_
-            ) != SPARSE_STATUS_SUCCESS) {
-            throw std::exception();
-        }
-
-        // Make sure MKL does not reallocate the arrays
-        if (mkl_sparse_set_memory_hint(mkl_, SPARSE_MEMORY_NONE) != SPARSE_STATUS_SUCCESS) {
-            mkl_sparse_destroy(mkl_);
-            mkl_ = nullptr;
-            throw std::exception();
-        }
-
-        // Optimize the MKL representation
-        if (mkl_sparse_optimize(mkl_) != SPARSE_STATUS_SUCCESS) {
-            mkl_sparse_destroy(mkl_);
-            mkl_ = nullptr;
-            throw std::exception();
-        }
-    }
+        blockMap_(other.blockMap_),
+        colsInRow_(other.colsInRow_),
+        rowsInCol_(other.rowsInCol_)
+    {}
 
     /** @brief Copy assignment operator
      *
@@ -197,23 +48,82 @@ namespace DG
     {
         m_ = other.m_;
         n_ = other.n_;
-        nnzb_ = other.nnzb_;
-
-        values_ = std::move(other.values_);
-        other.values_ = 0;
-
-        columns_ = std::move(other.columns_);
-        other.columns_ = 0;
-
-        rowIndex_ = std::move(other.rowIndex_);
-        other.rowIndex_ = 0;
-
-        mkl_ = std::move(other.mkl_);
-        other.mkl_ = 0;
-
-        fromMKL_ = other.fromMKL_;
-
+        blockMap_ = std::move(other.blockMap_);
+        colsInRow_ = std::move(other.colsInRow_);
+        rowsInCol_ = std::move(other.rowsInCol_);
         return *this;
+    }
+
+    /** @brief Get a block
+     *
+     *  @param[in] i : The row index
+     *  @param[in] j : The column index
+     *
+     *  @note If it is not present the zero matrix is returned.
+     */
+    template<int P>
+    const typename SparseBlockMatrix<P>::Block&
+    SparseBlockMatrix<P>::getBlock(int i, int j) const
+    {
+        assert(blockExists(i,j));
+        return blockMap_.at(Index(i,j));
+    }
+
+    /** @brief Set a block
+     *
+     *  @param[in] i : The row index
+     *  @param[in] j : The column index
+     *  @param[in] block : The block to insert
+     */
+    template<int P>
+    void SparseBlockMatrix<P>::setBlock(int i, int j, const Block& block)
+    {
+        blockMap_[Index(i,j)] = block;
+        colsInRow_[i].insert(j);
+        rowsInCol_[j].insert(i);
+    }
+
+    /** @brief Add to a block
+     *
+     *  @param[in] i : The row index
+     *  @param[in] j : The column index
+     *  @param[in] block : The block to add
+     */
+    template<int P>
+    void SparseBlockMatrix<P>::addToBlock(int i, int j, const Block& block)
+    {
+        if (blockExists(i,j)) {
+            blockMap_[Index(i,j)] += block;
+        } else {
+            setBlock(i, j, block);
+        }
+    }
+
+    /** @brief Check for a nonzero block at a specified position
+     *
+     *  @param[in] i : The row index
+     *  @param[in] j : The column index
+     */
+    template<int P>
+    bool SparseBlockMatrix<P>::blockExists(int i, int j) const
+    {
+        assert(i >= 0 || i < m_ || j >= 0 || j < n_);
+        return blockMap_.count(Index(i,j)) > 0;
+    }
+
+    /** @brief Resize and clear the matrix
+     *
+     *  @param[in] m : The number of block rows
+     *  @param[in] n : The number of block columns
+     */
+    template<int P>
+    void SparseBlockMatrix<P>::reset(int m, int n)
+    {
+        m_ = m;
+        n_ = n;
+        blockMap_.clear();
+        colsInRow_.clear();
+        rowsInCol_.clear();
     }
 
     /** @brief Scale the matrix
@@ -223,8 +133,8 @@ namespace DG
     template<int P>
     void SparseBlockMatrix<P>::scale(double alpha)
     {
-        for (int i = 0; i < nnz(); ++i) {
-            values_[i] *= alpha;
+        for (auto& kv : blockMap_) {
+            kv.second *= alpha;
         }
     }
 
@@ -240,14 +150,12 @@ namespace DG
 
         ofs << "%%MatrixMarket matrix coordinate real general" << std::endl;
         ofs << rows() << " " << cols() << " " << nnz() << std::endl;
-        for (int bi = 0; bi < blockRows(); ++bi) {
-            for (int k = rowIndex_[bi]; k < rowIndex_[bi+1]; ++k) {
-                int bj = columns_[k];
-                for (int i=0; i<P; ++i) {
-                    for (int j=0; j<P; ++j) {
-                        double val = values_[blockSize()*k + P*i + j];
-                        ofs << P*bi+i+1 << " " << P*bj+j+1 << " " << val << std::endl;
-                    }
+        for (auto it = blockMap_.begin(); it != blockMap_.end(); ++it) {
+            int bi = it->first.i * P;
+            int bj = it->first.j * P;
+            for (int i=0; i<P; ++i) {
+                for (int j=0; j<P; ++j) {
+                    ofs << bi+i+1 << " " << bj+j+1 << " " << it->second(i,j) << std::endl;
                 }
             }
         }
@@ -275,21 +183,16 @@ namespace DG
             return false;
         }
 
-        // Let MKL to the arithmetic
-        sparse_matrix_t result;
-        sparse_status_t status = mkl_sparse_d_add(
-            SPARSE_OPERATION_NON_TRANSPOSE,
-            A.getMKL(),
-            alpha,
-            B.getMKL(),
-            &result
-        );
+        C.reset(A.blockRows(), A.blockCols());
 
-        if (status != SPARSE_STATUS_SUCCESS) {
-            return false;
+        for (const auto& kv : A.blockMap()) {
+            C.setBlock(kv.first.i, kv.first.j, alpha*kv.second);
         }
 
-        C = SparseBlockMatrix<P>(result);
+        for (const auto& kv : B.blockMap()) {
+            C.addToBlock(kv.first.i, kv.first.j, kv.second);
+        }
+
         return true;
     }
 
@@ -309,21 +212,16 @@ namespace DG
             return false;
         }
 
-        // Let MKL to the arithmetic
-        sparse_matrix_t result;
-        sparse_status_t status = mkl_sparse_d_add(
-            SPARSE_OPERATION_TRANSPOSE,
-            A.getMKL(),
-            alpha,
-            B.getMKL(),
-            &result
-        );
+        C.reset(B.blockRows(), B.blockCols());
 
-        if (status != SPARSE_STATUS_SUCCESS) {
-            return false;
+        for (const auto& kv : A.blockMap()) {
+            C.setBlock(kv.first.j, kv.first.i, alpha*kv.second);
         }
 
-        C = SparseBlockMatrix<P>(result);
+        for (const auto& kv : B.blockMap_) {
+            C.addToBlock(kv.first.i, kv.first.j, kv.second);
+        }
+
         return true;
     }
 
@@ -341,20 +239,16 @@ namespace DG
             return false;
         }
 
-        // Let MKL do the arithmetic
-        sparse_matrix_t result;
-        sparse_status_t status = mkl_sparse_spmm(
-            SPARSE_OPERATION_NON_TRANSPOSE,
-            A.getMKL(),
-            B.getMKL(),
-            &result
-        );
+        C.reset(A.blockRows(), B.blockCols());
 
-        if (status != SPARSE_STATUS_SUCCESS) {
-            return false;
+        for (int i = 0; i < A.blockRows(); ++i) {
+            for (int k : A.colsInRow(i)) {
+                for (int j : B.colsInRow(k)) {
+                    C.addToBlock(i, j, A.getBlock(i, k) * B.getBlock(k, j));
+                }
+            }
         }
 
-        C = SparseBlockMatrix<P>(result);
         return true;
     }
 
@@ -372,20 +266,16 @@ namespace DG
             return false;
         }
 
-        // Let MKL do the arithmetic
-        sparse_matrix_t result;
-        sparse_status_t status = mkl_sparse_spmm(
-            SPARSE_OPERATION_TRANSPOSE,
-            A.getMKL(),
-            B.getMKL(),
-            &result
-        );
+        C.reset(A.blockCols(), B.blockCols());
 
-        if (status != SPARSE_STATUS_SUCCESS) {
-            return false;
+        for (int i = 0; i < A.blockCols(); ++i) {
+            for (int k : A.rowsInCol(i)) {
+                for (int j : B.colsInRow(k)) {
+                    C.addToBlock(i, j, A.getBlock(k, i).transpose() * B.getBlock(k, j));
+                }
+            }
         }
 
-        C = SparseBlockMatrix<P>(result);
         return true;
     }
 
@@ -398,7 +288,16 @@ namespace DG
     template<int P>
     bool multiply_mv(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
-        return multiply_add_mv(1.0, A, x, 0.0, y);
+        Map<const Vector> xvec(x, A.cols(), 1);
+        Map<Vector> yvec(y, A.rows(), 1);
+        for (int i = 0; i < A.blockRows(); ++i) {
+            yvec.segment<P>(P*i).setZero();
+            for (int j : A.colsInRow(i)) {
+                yvec.segment<P>(P*i) += A.getBlock(i, j) * xvec.segment<P>(P*j);
+            }
+        }
+
+        return true;
     }
 
     /** @brief Matrix-vector multiplication
@@ -411,7 +310,7 @@ namespace DG
     bool multiply_mv(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
         y.resize(A.rows());
-        return multiply_add_mv(1.0, A, x, 0.0, y);
+        return multiply_mv(A, x.data(), y.data());
     }
 
     /** @brief Matrix-vector multiplication (transposed)
@@ -423,7 +322,16 @@ namespace DG
     template<int P>
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
-        return multiply_add_mv_t(1.0, A, x, 0.0, y);
+        Map<const Vector> xvec(x, A.rows(), 1);
+        Map<Vector> yvec(y, A.cols(), 1);
+        for (int i = 0; i < A.blockCols(); ++i) {
+            yvec.segment<P>(P*i).setZero();
+            for (int j : A.rowsInCol(i)) {
+                yvec.segment<P>(P*i) += A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
+            }
+        }
+
+        return true;
     }
 
     /** @brief Matrix-vector multiplication (transposed)
@@ -436,7 +344,7 @@ namespace DG
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
         y.resize(A.cols());
-        return multiply_add_mv_t(1.0, A, x, 0.0, y);
+        return multiply_mv_t(A, x.data(), y.data());
     }
 
     /** @brief Matrix-vector multiplication
@@ -450,20 +358,16 @@ namespace DG
     template<int P>
     bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
-        // Let MKL do the arithmetic
-        matrix_descr descr;
-        descr.type = SPARSE_MATRIX_TYPE_GENERAL;
-        sparse_status_t status = mkl_sparse_d_mv(
-            SPARSE_OPERATION_NON_TRANSPOSE,
-            alpha,
-            A.getMKL(),
-            descr,
-            x,
-            beta,
-            y
-        );
+        Map<const Vector> xvec(x, A.cols(), 1);
+        Map<Vector> yvec(y, A.rows(), 1);
+        for (int i = 0; i < A.blockRows(); ++i) {
+            yvec.segment<P>(P*i) *= beta;
+            for (int j : A.colsInRow(i)) {
+                yvec.segment<P>(P*i) += alpha * A.getBlock(i, j) * xvec.segment<P>(P*j);
+            }
+        }
 
-        return status == SPARSE_STATUS_SUCCESS;
+        return true;
     }
 
     /** @brief Matrix-vector multiplication
@@ -491,20 +395,16 @@ namespace DG
     template<int P>
     bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
     {
-        // Let MKL do the arithmetic
-        matrix_descr descr;
-        descr.type = SPARSE_MATRIX_TYPE_GENERAL;
-        sparse_status_t status = mkl_sparse_d_mv(
-            SPARSE_OPERATION_TRANSPOSE,
-            alpha,
-            A.getMKL(),
-            descr,
-            x,
-            beta,
-            y
-        );
+        Map<const Vector> xvec(x, A.rows(), 1);
+        Map<Vector> yvec(y, A.cols(), 1);
+        for (int i = 0; i < A.blockCols(); ++i) {
+            yvec.segment<P>(P*i) *= beta;
+            for (int j : A.rowsInCol(i)) {
+                yvec.segment<P>(P*i) += alpha * A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
+            }
+        }
 
-        return status == SPARSE_STATUS_SUCCESS;
+        return true;
     }
 
     /** @brief Matrix-vector multiplication (transposed)
@@ -519,158 +419,5 @@ namespace DG
     bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const Vector& x, double beta, Vector& y)
     {
         return multiply_add_mv_t(alpha, A, x.data(), beta, y.data());
-    }
-
-    /********************************
-     *** SparseBlockMatrixBuilder ***
-     ********************************/
-
-    /** @brief Empty constructor */
-    template<int P>
-    SparseBlockMatrixBuilder<P>::SparseBlockMatrixBuilder() :
-        m_(0),
-        n_(0),
-        zero_(SparseBlockMatrixBuilder<P>::Block::Zero())
-    {}
-
-    /** @brief Constructor
-     *
-     *  @param[in] m : The number of block rows
-     *  @param[in] n : The number of block columns
-     */
-    template<int P>
-    SparseBlockMatrixBuilder<P>::SparseBlockMatrixBuilder(int m, int n) :
-        m_(m),
-        n_(n),
-        zero_(SparseBlockMatrixBuilder<P>::Block::Zero())
-    {}
-
-    /** @brief Get a block
-     *
-     *  @param[in] i : The row index
-     *  @param[in] j : The column index
-     *
-     *  @note If it is not present the zero matrix is returned.
-     */
-    template<int P>
-    const typename SparseBlockMatrixBuilder<P>::Block&
-    SparseBlockMatrixBuilder<P>::getBlock(int i, int j)
-    {
-        assert(blockExists(i,j));
-        return blockMap_[Index(i,j)];
-    }
-
-    /** @brief Set a block
-     *
-     *  @param[in] i : The row index
-     *  @param[in] j : The column index
-     *  @param[in] block : The block to insert
-     */
-    template<int P>
-    void SparseBlockMatrixBuilder<P>::setBlock(int i, int j, const Block& block)
-    {
-        blockMap_[Index(i,j)] = block;
-        rows_[i].insert(j);
-        cols_[j].insert(i);
-    }
-
-    /** @brief Add to a block
-     *
-     *  @param[in] i : The row index
-     *  @param[in] j : The column index
-     *  @param[in] block : The block to add
-     */
-    template<int P>
-    void SparseBlockMatrixBuilder<P>::addToBlock(int i, int j, const Block& block)
-    {
-        if (blockExists(i,j)) {
-            blockMap_[Index(i,j)] += block;
-        } else {
-            setBlock(i, j, block);
-        }
-    }
-
-    /** @brief Check for a nonzero block at a specified position
-     *
-     *  @param[in] i : The row index
-     *  @param[in] j : The column index
-     */
-    template<int P>
-    bool SparseBlockMatrixBuilder<P>::blockExists(int i, int j)
-    {
-        assert(i >= 0 || i < m_ || j >= 0 || j < n_);
-        return blockMap_.count(Index(i,j)) > 0;
-    }
-
-    /** @brief Convert to MKL representation */
-    template<int P>
-    SparseBlockMatrix<P> SparseBlockMatrixBuilder<P>::build()
-    {
-        // Get the indices of all the blocks and order them (in row-major order)
-        std::vector<Index> keys;
-        keys.reserve(nnzb());
-        for (auto& kv : blockMap_) {
-            keys.push_back(kv.first);
-        }
-        std::sort(keys.begin(), keys.end());
-
-        // Construct the BSR arrays
-        double* values = (double *) mkl_malloc(nnz()  * sizeof(double), MKL_ALIGN);
-        int* columns   = (int *)    mkl_malloc(nnzb() * sizeof(int),    MKL_ALIGN);
-        int* rowIndex  = (int *)    mkl_malloc((m_+1) * sizeof(int),    MKL_ALIGN);
-
-        int r = 0;
-        int rowStart = -1;
-        for (int k = 0; k < nnzb(); ++k) {
-            const Block& block = blockMap_.at(keys[k]);
-            std::copy(block.data(), block.data() + block.size(), &values[k*blockSize()]);
-            columns[k] = keys[k].j;
-            if (keys[k].i != rowStart) {
-                rowIndex[r] = k;
-                rowStart = keys[k].i;
-                ++r;
-            }
-        }
-        rowIndex[m_] = nnzb();
-
-        return SparseBlockMatrix<P>(m_, n_, values, columns, rowIndex);
-    }
-
-    /** @brief Resize and clear the builder
-     *
-     *  @param[in] m : The number of block rows
-     *  @param[in] n : The number of block columns
-     */
-    template<int P>
-    void SparseBlockMatrixBuilder<P>::reset(int m, int n)
-    {
-        m_ = m;
-        n_ = n;
-        blockMap_.clear();
-    }
-
-    /** @brief Write the matrix to a file (in Matrix Market format)
-     *
-     *  @param[in] file : The filename
-     */
-    template<int P>
-    void SparseBlockMatrixBuilder<P>::write(const std::string& file) const
-    {
-        std::ofstream ofs(file);
-        ofs.precision(std::numeric_limits<double>::max_digits10);
-
-        ofs << "%%MatrixMarket matrix coordinate real general" << std::endl;
-        ofs << rows() << " " << cols() << " " << nnz() << std::endl;
-        for (auto it = blockMap_.begin(); it != blockMap_.end(); ++it) {
-            int bi = it->first.i * P;
-            int bj = it->first.j * P;
-            for (int i=0; i<P; ++i) {
-                for (int j=0; j<P; ++j) {
-                    ofs << bi+i+1 << " " << bj+j+1 << " " << it->second(i,j) << std::endl;
-                }
-            }
-        }
-
-        ofs.close();
     }
 }

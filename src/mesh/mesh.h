@@ -165,15 +165,10 @@ namespace DG
             return Master<P,N>::invmass * jac;
         }
 
-        /** The i-th node in the element */
+        /** The index-th node in the element */
         Tuple<double,N> dgnodes(Tuple<int,N> index) const
         {
-            assert((0 <= index).all() && (index < P).all());
-            Tuple<double,N> node;
-            for (int i=0; i<N; ++i) {
-                node[i] = GaussLobatto<P>::nodes[index[i]];
-            }
-            return cell.lower + cell.width() * node;
+            return Master<P,N>::dgnodes(index, cell);
         }
 
         /** A pointer to the mesh */

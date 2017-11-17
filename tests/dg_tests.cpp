@@ -9,6 +9,7 @@
 #include "boundaryconditions.h"
 #include "ldgpoisson.h"
 #include "timer.h"
+#include "multigrid.h"
 
 int main(int argc, char* argv[])
 {
@@ -25,7 +26,7 @@ int main(int argc, char* argv[])
     if (argc >= 2) dx     = atof(argv[1]);
     if (argc >= 3) bctype = (DG::BoundaryType)atoi(argv[2]);
     if (argc >= 4) tau0   = atof(argv[3]);
-    if (argc >= 4) tauD   = atof(argv[4]);
+    if (argc >= 5) tauD   = atof(argv[4]);
 
     auto h = [dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
 
@@ -64,12 +65,30 @@ int main(int argc, char* argv[])
     DG::Function<P,N> f(mesh, ffun);
     if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u_true.meanZero();
 
-    // Discretize and solve
+    // Discretize the Poisson problem
     DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
 
+    // Build the multigrid hierarchy
     DG::Timer::tic();
-    DG::Function<P,N> u = poisson.solve(f);
-    DG::Timer::toc("Poisson solve");
+    DG::InterpolationHierarchy<P,N> hierarchy(qt);
+    DG::Multigrid<P,N> mg(poisson.ops(), hierarchy);
+    auto precon = [&mg](const DG::Vector& b) {
+        mg.solution().setZero();
+        mg.rhs() = b;
+        mg.vcycle();
+        DG::Vector x = mg.solution();
+        return x;
+    };
+    DG::Timer::toc("Build multigrid hierarchy");
+
+    // Add the forcing function to the RHS
+    DG::Function<P,N> rhs = poisson.computeRHS(f);
+
+    // Solve with MGPCG
+    DG::Timer::tic();
+    DG::Function<P,N> u(mesh);
+    DG::pcg(poisson.ops()->A, rhs.vec(), u.vec(), precon);
+    DG::Timer::toc("Solve using MGPCG");
 
     // Output the data
     DG::Timer::tic();

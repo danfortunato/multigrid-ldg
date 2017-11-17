@@ -5,9 +5,20 @@
 #include <vector>
 #include "common.h"
 #include "range.h"
+#include "quadtree.h"
 
 namespace DG
 {
+    /** @brief Gauss-Lobatto nodes on [0,1] */
+    template<int P>
+    struct GaussLobatto
+    {
+        /** Nodal points */
+        static const double nodes[P];
+        /** Differentiation matrix */
+        static const Mat<P,P> diff;
+    };
+
     /** @brief The master element: [0,1]^N */
     template<int P, int N>
     struct Master
@@ -20,16 +31,16 @@ namespace DG
         static const KronMat<P,N> mass;
         /** Inverse mass matrix */
         static const KronMat<P,N> invmass;
-    };
-
-    /** @brief Gauss-Lobatto nodes on [0,1] */
-    template<int P>
-    struct GaussLobatto
-    {
-        /** Nodal points */
-        static const double nodes[P];
-        /** Differentiation matrix */
-        static const Mat<P,P> diff;
+        /** The index-th node in a given cell */
+        static Tuple<double,N> dgnodes(Tuple<int,N> index, Cell<N> cell = Cell<N>())
+        {
+            assert((0 <= index).all() && (index < P).all());
+            Tuple<double,N> node;
+            for (int i=0; i<N; ++i) {
+                node[i] = GaussLobatto<P>::nodes[index[i]];
+            }
+            return cell.lower + cell.width() * node;
+        }
     };
 
     template<int P>

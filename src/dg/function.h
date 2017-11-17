@@ -24,19 +24,25 @@ namespace DG
             /** @brief Construct an empty function over a mesh */
             Function(const Mesh<P,N>& mesh_) :
                 coeffs(mesh_.ne),
-                mesh(&mesh_)
+                mesh(&mesh_),
+                vec_(data(), size(), 1),
+                elemvec_(data())
             {}
 
             /** @brief Construct a constant function over a mesh */
             Function(const Mesh<P,N>& mesh_, double value) :
                 coeffs(mesh_.ne, NDArray<double,P,N>(value)),
-                mesh(&mesh_)
+                mesh(&mesh_),
+                vec_(data(), size(), 1),
+                elemvec_(data())
             {}
 
             /** @brief Construct a function over the mesh from a given function handle.
              *         This will be the nodal interpolant. */
             Function(const Mesh<P,N>& mesh_, const std::function<double(Tuple<double,N>)>& f) :
-                mesh(&mesh_)
+                mesh(&mesh_),
+                vec_(data(), size(), 1),
+                elemvec_(data())
             {
                 coeffs.resize(mesh->ne);
                 for (int elem = 0; elem < mesh->ne; ++elem) {
@@ -62,7 +68,6 @@ namespace DG
                 return coeffs[elem].data();
             }
 
-
             /** @brief Access the coefficient data for a given element (const version)
              *
              *  @note If no element is specified, this will return a pointer to
@@ -70,32 +75,35 @@ namespace DG
              */
             const double* data(int elem = 0) const
             {
-                // return coeffs[0].data();
                 return coeffs[elem].data();
             }
 
             /** @brief Represent the function's coefficients as a Vector */
-            Map<Vector> vec()
+            Map<Vector>& vec()
             {
-                return Map<Vector>(data(), size(), 1);
+                new (&vec_) Map<Vector>(data(), size(), 1);
+                return vec_;
             }
 
             /** @brief Represent the function's coefficients as a Vector (const version) */
-            const Map<const Vector> vec() const
+            const Map<const Vector>& vec() const
             {
-                return Map<const Vector>(data(), size(), 1);
+                new (&vec_) Map<const Vector>(data(), size(), 1);
+                return vec_;
             }
 
             /** @brief Represent the function's coefficients for a given element as a Vector */
-            Map<KronVec<P,N>> vec(int elem)
+            Map<KronVec<P,N>>& vec(int elem)
             {
-                return Map<KronVec<P,N>>(data(elem));
+                new (&elemvec_) Map<KronVec<P,N>>(data(elem));
+                return elemvec_;
             }
 
             /** @brief Represent the function's coefficients for a given element as a Vector (const version) */
-            const Map<const KronVec<P,N>> vec(int elem) const
+            const Map<const KronVec<P,N>>& vec(int elem) const
             {
-                return Map<const KronVec<P,N>>(data(elem));
+                new (&elemvec_) Map<const KronVec<P,N>>(data(elem));
+                return elemvec_;
             }
 
             /** @brief Evaluate the function */
@@ -167,6 +175,8 @@ namespace DG
         private:
             /** The mesh this function lives on */
             const Mesh<P,N>* mesh;
+            Map<Vector> vec_;
+            Map<KronVec<P,N>> elemvec_;
     };
 
     //operator +, -, *, /, +=, ==, etc...
