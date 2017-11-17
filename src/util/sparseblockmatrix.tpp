@@ -288,7 +288,16 @@ namespace DG
     template<int P>
     bool multiply_mv(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
-        return multiply_add_mv(1.0, A, x, 0.0, y);
+        Map<const Vector> xvec(x, A.cols(), 1);
+        Map<Vector> yvec(y, A.rows(), 1);
+        for (int i = 0; i < A.blockRows(); ++i) {
+            yvec.segment<P>(P*i).setZero();
+            for (int j : A.colsInRow(i)) {
+                yvec.segment<P>(P*i) += A.getBlock(i, j) * xvec.segment<P>(P*j);
+            }
+        }
+
+        return true;
     }
 
     /** @brief Matrix-vector multiplication
@@ -301,7 +310,7 @@ namespace DG
     bool multiply_mv(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
         y.resize(A.rows());
-        return multiply_add_mv(1.0, A, x, 0.0, y);
+        return multiply_mv(A, x.data(), y.data());
     }
 
     /** @brief Matrix-vector multiplication (transposed)
@@ -313,7 +322,16 @@ namespace DG
     template<int P>
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const double* x, double* y)
     {
-        return multiply_add_mv_t(1.0, A, x, 0.0, y);
+        Map<const Vector> xvec(x, A.rows(), 1);
+        Map<Vector> yvec(y, A.cols(), 1);
+        for (int i = 0; i < A.blockCols(); ++i) {
+            yvec.segment<P>(P*i).setZero();
+            for (int j : A.rowsInCol(i)) {
+                yvec.segment<P>(P*i) += A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
+            }
+        }
+
+        return true;
     }
 
     /** @brief Matrix-vector multiplication (transposed)
@@ -326,7 +344,7 @@ namespace DG
     bool multiply_mv_t(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
     {
         y.resize(A.cols());
-        return multiply_add_mv_t(1.0, A, x, 0.0, y);
+        return multiply_mv_t(A, x.data(), y.data());
     }
 
     /** @brief Matrix-vector multiplication
