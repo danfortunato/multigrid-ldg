@@ -12,7 +12,7 @@
 namespace DG
 {
     /** @brief The number of quadrature points to use */
-    const int Q = 10;
+    static const int Q = 10;
 
     /** @brief Compile-time power function */
     template<typename T>
@@ -21,12 +21,18 @@ namespace DG
         return (exponent == 0) ? 1 : (base * ipow(base, exponent-1));
     }
 
+    /** The storage order to use */
+    constexpr auto StorageOrder = Eigen::RowMajor;
+    // Eigen disallows row-major column vectors
+    template<int M, int N>
+    constexpr auto ChooseStorageOrder = (M>1 && N==1) ? Eigen::ColMajor : StorageOrder;
+
     /** Compile-time-sized matrix */
     template<int M, int N = M>
-    using Mat = Eigen::Matrix<double,M,N,Eigen::RowMajor>;
+    using Mat = Eigen::Matrix<double,M,N,ChooseStorageOrder<M,N>>;
 
     /** Runtime-sized matrix */
-    using Matrix = Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+    using Matrix = Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,StorageOrder>;
 
     /** Compile-time-sized column vector */
     template<int N>
@@ -45,31 +51,35 @@ namespace DG
 
     /** Compile-time-sized tensor product matrix */
     template<int N, int P, int Q = P>
-    using KronMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N),Eigen::RowMajor>;
+    using KronMat = Mat<ipow(P,N),ipow(Q,N)>;
 
     /** Compile-time-sized tensor product vector */
     template<int N, int P>
-    using KronVec = Eigen::Matrix<double,ipow(P,N),1>;
+    using KronVec = Vec<ipow(P,N)>;
 
     /** Compile-time-sized tensor product diagonal matrix */
     template<int N, int P>
-    using KronDiag = Eigen::DiagonalMatrix<double,ipow(P,N)>;
+    using KronDiag = Diag<ipow(P,N)>;
 
     /** Compile-time-sized slicing matrix */
     template<int N, int P>
-    using SliceMat = Eigen::Matrix<double,ipow(P,N-1),ipow(P,N),Eigen::RowMajor>;
+    using SliceMat = Mat<ipow(P,N-1),ipow(P,N)>;
 
     /** Compile-time-sized evaluation matrix */
     template<int N, int P, int Q>
-    using EvalMat = Eigen::Matrix<double,ipow(Q,N-1),ipow(P,N),Eigen::RowMajor>;
+    using EvalMat = KronMat<N,Q,P>;
+
+    /** Compile-time-sized slice evaluation matrix */
+    template<int N, int P, int Q>
+    using SliceEvalMat = Mat<ipow(Q,N-1),ipow(P,N)>;
 
     /** Compile-time-sized element integration matrix */
     template<int N, int P, int Q>
-    using ElemQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N),Eigen::RowMajor>;
+    using ElemQuadMat = KronMat<N,P,Q>;
 
     /** Compile-time-sized face integration matrix */
     template<int N, int P, int Q>
-    using FaceQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N-1),Eigen::RowMajor>;
+    using FaceQuadMat = Mat<ipow(P,N),ipow(Q,N-1)>;
 
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>

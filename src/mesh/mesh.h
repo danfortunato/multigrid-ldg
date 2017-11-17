@@ -318,7 +318,7 @@ namespace DG
             } else {
 
                 // Compute matrices to evaluate at quadrature points
-                EvalMat<N,P,Q> phi_l, phi_r;
+                SliceEvalMat<N,P,Q> phi_l, phi_r;
                 KronVec<N-1,Q> w;
                 for (RangeIterator<N-1,Q> it; it != Range<N-1,Q>::end(); ++it) {
                     Tuple<double,N> ql, qr;
