@@ -9,8 +9,8 @@ namespace DG
      *************************/
 
     /** @brief Empty constructor */
-    template<int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix() :
+    template<int P, int Q>
+    SparseBlockMatrix<P,Q>::SparseBlockMatrix() :
         m_(0),
         n_(0)
     {}
@@ -20,8 +20,8 @@ namespace DG
      *  @param[in] m : The number of block rows
      *  @param[in] n : The number of block columns
      */
-    template<int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(int m, int n) :
+    template<int P, int Q>
+    SparseBlockMatrix<P,Q>::SparseBlockMatrix(int m, int n) :
         m_(m),
         n_(n)
     {}
@@ -30,8 +30,8 @@ namespace DG
      *
      *  @param[in] other : The sparse block matrix to be copied
      */
-    template<int P>
-    SparseBlockMatrix<P>::SparseBlockMatrix(const SparseBlockMatrix<P>& other) :
+    template<int P, int Q>
+    SparseBlockMatrix<P,Q>::SparseBlockMatrix(const SparseBlockMatrix<P,Q>& other) :
         m_(other.m_),
         n_(other.n_),
         blockMap_(other.blockMap_),
@@ -43,8 +43,8 @@ namespace DG
      *
      *  @param[in] other : The sparse block matrix to be copied
      */
-    template<int P>
-    SparseBlockMatrix<P>& SparseBlockMatrix<P>::operator=(SparseBlockMatrix<P> other)
+    template<int P, int Q>
+    SparseBlockMatrix<P,Q>& SparseBlockMatrix<P,Q>::operator=(SparseBlockMatrix<P,Q> other)
     {
         m_ = other.m_;
         n_ = other.n_;
@@ -61,9 +61,9 @@ namespace DG
      *
      *  @note If it is not present the zero matrix is returned.
      */
-    template<int P>
-    const typename SparseBlockMatrix<P>::Block&
-    SparseBlockMatrix<P>::getBlock(int i, int j) const
+    template<int P, int Q>
+    const typename SparseBlockMatrix<P,Q>::Block&
+    SparseBlockMatrix<P,Q>::getBlock(int i, int j) const
     {
         assert(blockExists(i,j));
         return blockMap_.at(Index(i,j));
@@ -75,8 +75,8 @@ namespace DG
      *  @param[in] j : The column index
      *  @param[in] block : The block to insert
      */
-    template<int P>
-    void SparseBlockMatrix<P>::setBlock(int i, int j, const Block& block)
+    template<int P, int Q>
+    void SparseBlockMatrix<P,Q>::setBlock(int i, int j, const Block& block)
     {
         blockMap_[Index(i,j)] = block;
         colsInRow_[i].insert(j);
@@ -89,8 +89,8 @@ namespace DG
      *  @param[in] j : The column index
      *  @param[in] block : The block to add
      */
-    template<int P>
-    void SparseBlockMatrix<P>::addToBlock(int i, int j, const Block& block)
+    template<int P, int Q>
+    void SparseBlockMatrix<P,Q>::addToBlock(int i, int j, const Block& block)
     {
         if (blockExists(i,j)) {
             blockMap_[Index(i,j)] += block;
@@ -104,8 +104,8 @@ namespace DG
      *  @param[in] i : The row index
      *  @param[in] j : The column index
      */
-    template<int P>
-    bool SparseBlockMatrix<P>::blockExists(int i, int j) const
+    template<int P, int Q>
+    bool SparseBlockMatrix<P,Q>::blockExists(int i, int j) const
     {
         assert(i >= 0 || i < m_ || j >= 0 || j < n_);
         return blockMap_.count(Index(i,j)) > 0;
@@ -116,8 +116,8 @@ namespace DG
      *  @param[in] m : The number of block rows
      *  @param[in] n : The number of block columns
      */
-    template<int P>
-    void SparseBlockMatrix<P>::reset(int m, int n)
+    template<int P, int Q>
+    void SparseBlockMatrix<P,Q>::reset(int m, int n)
     {
         m_ = m;
         n_ = n;
@@ -130,8 +130,8 @@ namespace DG
      *
      *  @param[in] alpha : Scaling factor
      */
-    template<int P>
-    void SparseBlockMatrix<P>::scale(double alpha)
+    template<int P, int Q>
+    void SparseBlockMatrix<P,Q>::scale(double alpha)
     {
         for (auto& kv : blockMap_) {
             kv.second *= alpha;
@@ -142,8 +142,8 @@ namespace DG
      *
      *  @param[in] file : The filename
      */
-    template<int P>
-    void SparseBlockMatrix<P>::write(const std::string& file) const
+    template<int P, int Q>
+    void SparseBlockMatrix<P,Q>::write(const std::string& file) const
     {
         std::ofstream ofs(file);
         ofs.precision(std::numeric_limits<double>::max_digits10);
@@ -152,9 +152,9 @@ namespace DG
         ofs << rows() << " " << cols() << " " << nnz() << std::endl;
         for (auto it = blockMap_.begin(); it != blockMap_.end(); ++it) {
             int bi = it->first.i * P;
-            int bj = it->first.j * P;
+            int bj = it->first.j * Q;
             for (int i=0; i<P; ++i) {
-                for (int j=0; j<P; ++j) {
+                for (int j=0; j<Q; ++j) {
                     ofs << bi+i+1 << " " << bj+j+1 << " " << it->second(i,j) << std::endl;
                 }
             }
@@ -174,8 +174,8 @@ namespace DG
      *  @param[in]  B     : Sparse block matrix
      *  @param[out] C     : C := alpha*A + B
      */
-    template<int P>
-    bool add_mm(double alpha, const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
+    template<int P, int Q>
+    bool add_mm(double alpha, const SparseBlockMatrix<P,Q>& A, const SparseBlockMatrix<P,Q>& B, SparseBlockMatrix<P,Q>& C)
     {
         // Check that the matrix dimensions match
         if (A.blockRows() != B.blockRows() ||
@@ -203,8 +203,8 @@ namespace DG
      *  @param[in]  B     : Sparse block matrix
      *  @param[out] C     : C := alpha*A^T + B
      */
-    template<int P>
-    bool add_mm_t(double alpha, const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
+    template<int P, int Q>
+    bool add_mm_t(double alpha, const SparseBlockMatrix<P,Q>& A, const SparseBlockMatrix<Q,P>& B, SparseBlockMatrix<Q,P>& C)
     {
         // Check that the matrix dimensions match
         if (A.blockCols() != B.blockRows() ||
@@ -215,10 +215,10 @@ namespace DG
         C.reset(B.blockRows(), B.blockCols());
 
         for (const auto& kv : A.blockMap()) {
-            C.setBlock(kv.first.j, kv.first.i, alpha*kv.second);
+            C.setBlock(kv.first.j, kv.first.i, alpha*kv.second.transpose());
         }
 
-        for (const auto& kv : B.blockMap_) {
+        for (const auto& kv : B.blockMap()) {
             C.addToBlock(kv.first.i, kv.first.j, kv.second);
         }
 
@@ -231,8 +231,8 @@ namespace DG
      *  @param[in]  B  : Sparse block matrix
      *  @param[out] C  : C := A * B
      */
-    template<int P>
-    bool multiply_mm(const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
+    template<int P, int Q, int R>
+    bool multiply_mm(const SparseBlockMatrix<P,Q>& A, const SparseBlockMatrix<Q,R>& B, SparseBlockMatrix<P,R>& C)
     {
         // Check that the matrix dimensions match
         if (A.blockCols() != B.blockRows()) {
@@ -258,8 +258,8 @@ namespace DG
      *  @param[in]  B  : Sparse block matrix
      *  @param[out] C  : C := A^T * B
      */
-    template<int P>
-    bool multiply_mm_t(const SparseBlockMatrix<P>& A, const SparseBlockMatrix<P>& B, SparseBlockMatrix<P>& C)
+    template<int P, int Q, int R>
+    bool multiply_mm_t(const SparseBlockMatrix<P,Q>& A, const SparseBlockMatrix<P,R>& B, SparseBlockMatrix<Q,R>& C)
     {
         // Check that the matrix dimensions match
         if (A.blockRows() != B.blockRows()) {
@@ -285,15 +285,15 @@ namespace DG
      *  @param[in]  x : Dense array
      *  @param[out] y : y := A*x
      */
-    template<int P>
-    bool multiply_mv(const SparseBlockMatrix<P>& A, const double* x, double* y)
+    template<int P, int Q>
+    bool multiply_mv(const SparseBlockMatrix<P,Q>& A, const double* x, double* y)
     {
         Map<const Vector> xvec(x, A.cols(), 1);
         Map<Vector> yvec(y, A.rows(), 1);
         for (int i = 0; i < A.blockRows(); ++i) {
             yvec.segment<P>(P*i).setZero();
             for (int j : A.colsInRow(i)) {
-                yvec.segment<P>(P*i) += A.getBlock(i, j) * xvec.segment<P>(P*j);
+                yvec.segment<P>(P*i) += A.getBlock(i, j) * xvec.segment<Q>(Q*j);
             }
         }
 
@@ -306,8 +306,8 @@ namespace DG
      *  @param[in]  x : Dense vector
      *  @param[out] y : y := A*x
      */
-    template<int P>
-    bool multiply_mv(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
+    template<int P, int Q>
+    bool multiply_mv(const SparseBlockMatrix<P,Q>& A, const Vector& x, Vector& y)
     {
         y.resize(A.rows());
         return multiply_mv(A, x.data(), y.data());
@@ -319,15 +319,15 @@ namespace DG
      *  @param[in]  x : Dense array
      *  @param[out] y : y := A^T*x
      */
-    template<int P>
-    bool multiply_mv_t(const SparseBlockMatrix<P>& A, const double* x, double* y)
+    template<int P, int Q>
+    bool multiply_mv_t(const SparseBlockMatrix<P,Q>& A, const double* x, double* y)
     {
         Map<const Vector> xvec(x, A.rows(), 1);
         Map<Vector> yvec(y, A.cols(), 1);
         for (int i = 0; i < A.blockCols(); ++i) {
-            yvec.segment<P>(P*i).setZero();
+            yvec.segment<Q>(Q*i).setZero();
             for (int j : A.rowsInCol(i)) {
-                yvec.segment<P>(P*i) += A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
+                yvec.segment<Q>(Q*i) += A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
             }
         }
 
@@ -340,8 +340,8 @@ namespace DG
      *  @param[in]  x : Dense vector
      *  @param[out] y : y := A^T*x
      */
-    template<int P>
-    bool multiply_mv_t(const SparseBlockMatrix<P>& A, const Vector& x, Vector& y)
+    template<int P, int Q>
+    bool multiply_mv_t(const SparseBlockMatrix<P,Q>& A, const Vector& x, Vector& y)
     {
         y.resize(A.cols());
         return multiply_mv_t(A, x.data(), y.data());
@@ -355,15 +355,15 @@ namespace DG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A*x + beta*y
      */
-    template<int P>
-    bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
+    template<int P, int Q>
+    bool multiply_add_mv(double alpha, const SparseBlockMatrix<P,Q>& A, const double* x, double beta, double* y)
     {
         Map<const Vector> xvec(x, A.cols(), 1);
         Map<Vector> yvec(y, A.rows(), 1);
         for (int i = 0; i < A.blockRows(); ++i) {
             yvec.segment<P>(P*i) *= beta;
             for (int j : A.colsInRow(i)) {
-                yvec.segment<P>(P*i) += alpha * A.getBlock(i, j) * xvec.segment<P>(P*j);
+                yvec.segment<P>(P*i) += alpha * A.getBlock(i, j) * xvec.segment<Q>(Q*j);
             }
         }
 
@@ -378,8 +378,8 @@ namespace DG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A*x + beta*y
      */
-    template<int P>
-    bool multiply_add_mv(double alpha, const SparseBlockMatrix<P>& A, const Vector& x, double beta, Vector& y)
+    template<int P, int Q>
+    bool multiply_add_mv(double alpha, const SparseBlockMatrix<P,Q>& A, const Vector& x, double beta, Vector& y)
     {
         return multiply_add_mv(alpha, A, x.data(), beta, y.data());
     }
@@ -392,15 +392,15 @@ namespace DG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A^T*x + beta*y
      */
-    template<int P>
-    bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const double* x, double beta, double* y)
+    template<int P, int Q>
+    bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P,Q>& A, const double* x, double beta, double* y)
     {
         Map<const Vector> xvec(x, A.rows(), 1);
         Map<Vector> yvec(y, A.cols(), 1);
         for (int i = 0; i < A.blockCols(); ++i) {
-            yvec.segment<P>(P*i) *= beta;
+            yvec.segment<Q>(Q*i) *= beta;
             for (int j : A.rowsInCol(i)) {
-                yvec.segment<P>(P*i) += alpha * A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
+                yvec.segment<Q>(Q*i) += alpha * A.getBlock(j, i).transpose() * xvec.segment<P>(P*j);
             }
         }
 
@@ -415,8 +415,8 @@ namespace DG
      *  @param[in]     beta  : Scaling factor for y
      *  @param[in,out] y     : y := alpha*A^T*x + beta*y
      */
-    template<int P>
-    bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P>& A, const Vector& x, double beta, Vector& y)
+    template<int P, int Q>
+    bool multiply_add_mv_t(double alpha, const SparseBlockMatrix<P,Q>& A, const Vector& x, double beta, Vector& y)
     {
         return multiply_add_mv_t(alpha, A, x.data(), beta, y.data());
     }

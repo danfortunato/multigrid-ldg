@@ -59,12 +59,12 @@ namespace DG
      *  for easy construction and modification of the matrix. Arithmetic is done
      *  in block map form.
      */
-    template<int P>
+    template<int P, int Q = P>
     class SparseBlockMatrix
     {
         public:
             /** The type of the blocks */
-            typedef Mat<P,P> Block;
+            typedef Mat<P,Q> Block;
             typedef std::unordered_map<Index,Block,IndexHasher> BlockMap;
 
             /** @brief Empty constructor */
@@ -74,16 +74,16 @@ namespace DG
             SparseBlockMatrix(int m, int n);
 
             /** @brief Copy constructor */
-            SparseBlockMatrix(const SparseBlockMatrix<P>& other);
+            SparseBlockMatrix(const SparseBlockMatrix<P,Q>& other);
 
             /** @brief Copy assignment operator */
-            SparseBlockMatrix<P>& operator=(SparseBlockMatrix<P> other);
+            SparseBlockMatrix<P,Q>& operator=(SparseBlockMatrix<P,Q> other);
 
             /** @brief The total number of rows in the matrix */
             int rows() const { return m_*P; }
 
             /** @brief The total number of columns in the matrix */
-            int cols() const { return n_*P; }
+            int cols() const { return n_*Q; }
 
             /** @brief The total size of the matrix */
             int size() const { return rows()*cols(); }
@@ -94,11 +94,14 @@ namespace DG
             /** @brief The number of block columns in the matrix */
             int blockCols() const { return n_; }
 
-            /** @brief The number of rows (or columns) per block */
-            static int blockDim() { return P; }
+            /** @brief The number of rows per block */
+            static int rowsPerBlock() { return P; }
+
+            /** @brief The number of columns per block */
+            static int colsPerBlock() { return Q; }
 
             /** @brief The number of elements per block */
-            static int blockSize() { return P*P; }
+            static int blockSize() { return P*Q; }
 
             /** @brief The number of nonzero blocks in the matrix */
             int nnzb() const { return blockMap_.size(); }
