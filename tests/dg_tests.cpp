@@ -35,43 +35,43 @@ int main(int argc, char* argv[])
     DG::Timer::toc("Build quadtree");
 
     DG::Timer::tic();
-    DG::Mesh<P,N> mesh(qt, coarsening);
+    DG::Mesh<N,P> mesh(qt, coarsening);
     DG::Timer::toc("Build mesh");
 
-    DG::BoundaryConditions<P,N> bcs(mesh);
+    DG::BoundaryConditions<N,P> bcs(mesh);
     std::function<double(DG::Tuple<double,N>)> ufun, ffun;
     switch (bctype) {
         case DG::kDirichlet:
             ufun = [](DG::Tuple<double,N> x) { return cos(2*M_PI*x[0])*cos(2*M_PI*x[1]) + x[0] + x[1]; };
             ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*cos(2*M_PI*x[0])*cos(2*M_PI*x[1]); };
-            bcs = DG::BoundaryConditions<P,N>::Dirichlet(mesh, ufun);
+            bcs = DG::BoundaryConditions<N,P>::Dirichlet(mesh, ufun);
             break;
         case DG::kNeumann:
             ufun = [](DG::Tuple<double,N> x) { return cos(2*M_PI*x[0])*cos(2*M_PI*x[1]) + x[0]*(1-x[0]) + x[1]*(1-x[1]); };
             ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*cos(2*M_PI*x[0])*cos(2*M_PI*x[1])+ 4.0; };
-            bcs = DG::BoundaryConditions<P,N>::Neumann(mesh, -1.0);
+            bcs = DG::BoundaryConditions<N,P>::Neumann(mesh, -1.0);
             break;
         case DG::kPeriodic:
             ufun = [](DG::Tuple<double,N> x) { return sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
             ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*sin(2*M_PI*x[0])*sin(2*M_PI*x[1]); };
-            bcs = DG::BoundaryConditions<P,N>::Periodic(mesh);
+            bcs = DG::BoundaryConditions<N,P>::Periodic(mesh);
             break;
         default:
             throw std::invalid_argument("Unknown boundary condition.");
     }
 
     // Set up the test
-    DG::Function<P,N> u_true(mesh, ufun);
-    DG::Function<P,N> f(mesh, ffun);
+    DG::Function<N,P> u_true(mesh, ufun);
+    DG::Function<N,P> f(mesh, ffun);
     if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u_true.meanZero();
 
     // Discretize the Poisson problem
-    DG::LDGPoisson<P,N> poisson(mesh, bcs, tau0, tauD);
+    DG::LDGPoisson<N,P> poisson(mesh, bcs, tau0, tauD);
 
     // Build the multigrid hierarchy
     DG::Timer::tic();
-    DG::InterpolationHierarchy<P,N> hierarchy(qt);
-    DG::Multigrid<P,N> mg(poisson.ops(), hierarchy);
+    DG::InterpolationHierarchy<N,P> hierarchy(qt);
+    DG::Multigrid<N,P> mg(poisson.ops(), hierarchy);
     auto precon = [&mg](const DG::Vector& b) {
         mg.solution().setZero();
         mg.rhs() = b;
@@ -82,11 +82,11 @@ int main(int argc, char* argv[])
     DG::Timer::toc("Build multigrid hierarchy");
 
     // Add the forcing function to the RHS
-    DG::Function<P,N> rhs = poisson.computeRHS(f);
+    DG::Function<N,P> rhs = poisson.computeRHS(f);
 
     // Solve with MGPCG
     DG::Timer::tic();
-    DG::Function<P,N> u(mesh);
+    DG::Function<N,P> u(mesh);
     DG::pcg(poisson.ops()->A, rhs.vec(), u.vec(), precon);
     DG::Timer::toc("Solve using MGPCG");
 

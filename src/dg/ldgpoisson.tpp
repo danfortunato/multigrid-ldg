@@ -11,8 +11,8 @@ namespace DG
      *  lifting, and penalty terms and assemble the global linear system
      *  to be solved.
      */
-    template<int P, int N>
-    void LDGPoisson<P,N>::discretize()
+    template<int N, int P>
+    void LDGPoisson<N,P>::discretize()
     {
         Timer::tic();
         construct_mass_matrix();
@@ -24,8 +24,8 @@ namespace DG
     }
 
     /** @brief Construct the block diagonal mass matrices */
-    template<int P, int N>
-    void LDGPoisson<P,N>::construct_mass_matrix()
+    template<int N, int P>
+    void LDGPoisson<N,P>::construct_mass_matrix()
     {
         Timer::tic();
 
@@ -39,19 +39,19 @@ namespace DG
     }
 
     /** @brief Construct the broken gradient operator */
-    template<int P, int N>
-    void LDGPoisson<P,N>::construct_broken_gradient()
+    template<int N, int P>
+    void LDGPoisson<N,P>::construct_broken_gradient()
     {
         Timer::tic();
 
-        KronMat<P,N> diff;
+        KronMat<N,P> diff;
         // Create the differentiation matrix in each dimension
         for (int i=0; i<N; ++i) {
-            diff = KronMat<P,N>::Zero();
+            diff = KronMat<N,P>::Zero();
             // Compute the tensor product of the 1D differentiation matrix
             // with the appropriate identity matrices
-            for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
-                for (RangeIterator<P,N> jt; jt != Range<P,N>::end(); ++jt) {
+            for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                for (RangeIterator<N,P> jt; jt != Range<N,P>::end(); ++jt) {
                     // There is only a nonzero entry when the indices for all
                     // the identity matrices are on the diagonal
                     bool nonzero = true;
@@ -82,12 +82,12 @@ namespace DG
     }
 
     /** @brief Construct the lifting operator and penalty terms */
-    template<int P, int N>
-    void LDGPoisson<P,N>::construct_lifting_terms()
+    template<int N, int P>
+    void LDGPoisson<N,P>::construct_lifting_terms()
     {
         Timer::tic();
 
-        KronMat<P,N> LL, RR, RL, MinvR, MinvL;
+        KronMat<N,P> LL, RR, RL, MinvR, MinvL;
 
         for (const auto& f : mesh->faces) {
 
@@ -122,13 +122,13 @@ namespace DG
     }
 
     /** @brief Compute the contribution of the boundary conditions to the RHS */
-    template<int P, int N>
-    void LDGPoisson<P,N>::add_source_terms()
+    template<int N, int P>
+    void LDGPoisson<N,P>::add_source_terms()
     {
         Timer::tic();
 
-        FaceQuadMat<P,Q,N> L;
-        KronVec<Q,N-1> bc;
+        FaceQuadMat<N,P,Q> L;
+        KronVec<N-1,Q> bc;
 
         for (const auto& f : mesh->faces) {
 
@@ -140,7 +140,7 @@ namespace DG
 
                 // Evaluate the boundary condition at the quadrature points
                 const auto& bcfun = bcs.bcmap.at(f.boundary()).f;
-                for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                for (RangeIterator<N-1,Q> it; it != Range<N-1,Q>::end(); ++it) {
                     Tuple<double,N> q;
                     for (int k=0; k<N-1; ++k) {
                         double x = Quadrature<Q>::nodes[it(k)];
@@ -186,10 +186,10 @@ namespace DG
      *
      *  @param[in] f : The forcing function
      */
-    template<int P, int N>
-    Function<P,N> LDGPoisson<P,N>::computeRHS(Function<P,N>& f)
+    template<int N, int P>
+    Function<N,P> LDGPoisson<N,P>::computeRHS(Function<N,P>& f)
     {
-        Function<P,N> ff(*mesh);
+        Function<N,P> ff(*mesh);
         for (const auto& e : mesh->elements) {
             int elem = e.lid;
             ff.vec(elem) = rhs.vec(elem) + e.mass()*f.vec(elem);

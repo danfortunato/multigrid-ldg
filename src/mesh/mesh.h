@@ -15,10 +15,10 @@
 namespace DG
 {
     /** @brief A face in the mesh */
-    template<int P, int N>
+    template<int N, int P>
     struct Face
     {
-        Face(const Mesh<P,N>& mesh_, int left_, int right_, int dim_, Vec<N> normal_, Cell<N> cell_) :
+        Face(const Mesh<N,P>& mesh_, int left_, int right_, int dim_, Vec<N> normal_, Cell<N> cell_) :
             mesh(&mesh_),
             left(left_),
             right(right_),
@@ -61,7 +61,7 @@ namespace DG
                         }
                     }
                     // Create the coordinate tensor product
-                    for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                    for (RangeIterator<N-1,Q> it; it != Range<N-1,Q>::end(); ++it) {
                         Tuple<double,N> tl, tr;
                         for (int k=0; k<N-1; ++k) {
                             double x = Quadrature<Q>::nodes[it(k)];
@@ -92,10 +92,10 @@ namespace DG
         }
 
         /** The mass matrix for this face */
-        KronMat<P,N-1> mass() const
+        KronMat<N-1,P> mass() const
         {
             double jac = area();
-            return Master<P,N-1>::mass * jac;
+            return Master<N-1,P>::mass * jac;
         }
 
         bool interiorQ() const
@@ -114,7 +114,7 @@ namespace DG
         }
 
         /** A pointer to the mesh */
-        const Mesh<P,N>* mesh;
+        const Mesh<N,P>* mesh;
         /** Index of element on the "left"  (anti-normal direction) */
         int left;
         /** Index of element on the "right" (normal direction) */
@@ -129,16 +129,16 @@ namespace DG
          *  Note: This should be codimension one! */
         Cell<N> cell;
         /** Local quadrature points with respect to the left element */
-        NDArray<Tuple<double,N>,Q,N-1> xl;
+        NDArray<Tuple<double,N>,N-1,Q> xl;
         /** Local quadrature points with respect to the right element */
-        NDArray<Tuple<double,N>,Q,N-1> xr;
+        NDArray<Tuple<double,N>,N-1,Q> xr;
     };
 
     /** @brief An element in the mesh */
-    template<int P, int N>
+    template<int N, int P>
     struct Element
     {
-        Element(const Mesh<P,N>& mesh_, int lid_, int gid_, Cell<N> cell_) :
+        Element(const Mesh<N,P>& mesh_, int lid_, int gid_, Cell<N> cell_) :
             mesh(&mesh_),
             lid(lid_),
             gid(gid_),
@@ -152,27 +152,27 @@ namespace DG
         }
 
         /** The mass matrix for the element */
-        KronMat<P,N> mass() const
+        KronMat<N,P> mass() const
         {
             double jac = volume();
-            return Master<P,N>::mass * jac;
+            return Master<N,P>::mass * jac;
         }
 
         /** The inverse mass matrix for the element */
-        KronMat<P,N> invmass() const
+        KronMat<N,P> invmass() const
         {
             double jac = 1/volume();
-            return Master<P,N>::invmass * jac;
+            return Master<N,P>::invmass * jac;
         }
 
         /** The index-th node in the element */
         Tuple<double,N> dgnodes(Tuple<int,N> index) const
         {
-            return Master<P,N>::dgnodes(index, cell);
+            return Master<N,P>::dgnodes(index, cell);
         }
 
         /** A pointer to the mesh */
-        const Mesh<P,N>* mesh;
+        const Mesh<N,P>* mesh;
         /** The local ID of the element */
         int lid;
         /** The global ID of the element */
@@ -182,7 +182,7 @@ namespace DG
     };
 
     /** @brief A mesh */
-    template<int P, int N>
+    template<int N, int P>
     struct Mesh
     {
         // Can only construct from quadtrees
@@ -208,7 +208,7 @@ namespace DG
                 int lid = elements.size();
                 G2L[gid] = lid;
                 L2G[lid] = gid;
-                Element<P,N> elem(*this, lid, gid, qt[gid].cell);
+                Element<N,P> elem(*this, lid, gid, qt[gid].cell);
                 elements.push_back(elem);
             }
             Timer::toc("Construct elements");
@@ -235,7 +235,7 @@ namespace DG
                             // Compute the geometric boundary index
                             int bnd = findBoundary(fcell, dir, i);
                             // Create the face
-                            Face<P,N> face(*this, elem.lid, bnd, i, outward * normal, fcell);
+                            Face<N,P> face(*this, elem.lid, bnd, i, outward * normal, fcell);
                             faces.push_back(face);
                             nb++;
                         } else {
@@ -256,7 +256,7 @@ namespace DG
                                     upper[i] = elements[left].cell.upper[i];  // =
                                     Cell<N> fcell(lower, upper);
                                     // Create the face
-                                    Face<P,N> face(*this, left, right, i, normal, fcell);
+                                    Face<N,P> face(*this, left, right, i, normal, fcell);
                                     faces.push_back(face);
                                 }
                             }
@@ -285,20 +285,20 @@ namespace DG
          *  @param[out] RR : Test from the right, trial from the right
          *  @param[out] RL : Test from the right, trial from the left
          */
-        void lift(const Face<P,N>& f, FaceQuadMat<P,Q,N>* L, FaceQuadMat<P,Q,N>* R, KronMat<P,N>* LL, KronMat<P,N>* RR, KronMat<P,N>* RL) const
+        void lift(const Face<N,P>& f, FaceQuadMat<N,P,Q>* L, FaceQuadMat<N,P,Q>* R, KronMat<N,P>* LL, KronMat<N,P>* RR, KronMat<N,P>* RL) const
         {
             // Can we use the 1D mass matrix?
             if (f.canonical && !f.boundaryQ()) {
 
                 // Compute slicing matrices
-                SliceMat<P,N> slice_l, slice_r;
+                SliceMat<N,P> slice_l, slice_r;
                 slice_l.setZero();
                 slice_r.setZero();
                 // Loop over the rows of the slicing matrix
-                for (RangeIterator<P,N-1> it; it != Range<P,N-1>::end(); ++it) {
+                for (RangeIterator<N-1,P> it; it != Range<N-1,P>::end(); ++it) {
                     int i = it.linearIndex();
                     // Copy it into jt, leaving space for the extra dimension
-                    RangeIterator<P,N> jt;
+                    RangeIterator<N,P> jt;
                     for (int k=0; k<f.dim; ++k) jt(k) = it(k);
                     for (int k=f.dim; k<N-1; ++k) jt(k+1) = it(k);
                     // The face nodes for the left element lie on its right side
@@ -318,9 +318,9 @@ namespace DG
             } else {
 
                 // Compute matrices to evaluate at quadrature points
-                EvalMat<P,Q,N> phi_l, phi_r;
-                KronVec<Q,N-1> w;
-                for (RangeIterator<Q,N-1> it; it != Range<Q,N-1>::end(); ++it) {
+                EvalMat<N,P,Q> phi_l, phi_r;
+                KronVec<N-1,Q> w;
+                for (RangeIterator<N-1,Q> it; it != Range<N-1,Q>::end(); ++it) {
                     Tuple<double,N> ql, qr;
                     if (f.canonical) {
                         // Tensor product from the master quadrature nodes
@@ -360,7 +360,7 @@ namespace DG
         /** @brief The polynomial order */
         static const int p = P-1;
         /** @brief The number of nodes per element */
-        static const int npl = Master<P,N>::npl;
+        static const int npl = Master<N,P>::npl;
         /** @brief The number of faces */
         int nf;
         /** @brief The number of elements */
@@ -368,9 +368,9 @@ namespace DG
         /** @brief The number of boundary faces */
         int nb;
         /** @brief An enumeration of the elements in the mesh */
-        std::vector<Element<P,N>> elements;
+        std::vector<Element<N,P>> elements;
         /** @brief An enumeration of the faces in the mesh */
-        std::vector<Face<P,N>> faces;
+        std::vector<Face<N,P>> faces;
         /** @brief Geometric boundary indices */
         std::vector<int> boundaryIndices;
         /** @brief Global-to-local element ID map */

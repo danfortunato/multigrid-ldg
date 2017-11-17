@@ -14,12 +14,12 @@ namespace DG
     class Range;
 
     /** @brief An N-dimensional range with extent P */
-    template<int P, int N>
-    class Range<P,N>
+    template<int N, int P>
+    class Range<N,P>
     {
         public:
             // Iterators
-            typedef RangeIterator<P,N> iterator;
+            typedef RangeIterator<N,P> iterator;
             static iterator begin() { return iterator(); }
             static iterator end() { return iterator(0); }
     };
@@ -94,8 +94,8 @@ namespace DG
      *****************/
 
     /** @brief An iterator for an N-dimensional range with extent P */
-    template<int P, int N>
-    class RangeIterator<P,N>
+    template<int N, int P>
+    class RangeIterator<N,P>
     {
         public:
             RangeIterator()
@@ -109,7 +109,7 @@ namespace DG
                 index_[0] = P;
             }
 
-            bool operator==(const RangeIterator<P,N>& x) const
+            bool operator==(const RangeIterator<N,P>& x) const
             {
                 for (int i=0; i<N; ++i) {
                     if (index_[i] != x.index_[i]) {
@@ -119,12 +119,12 @@ namespace DG
                 return true;
             }
 
-            bool operator!=(const RangeIterator<P,N>& x) const
+            bool operator!=(const RangeIterator<N,P>& x) const
             {
                 return !(*this == x);
             }
 
-            RangeIterator<P,N>& operator++()
+            RangeIterator<N,P>& operator++()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -137,14 +137,14 @@ namespace DG
                 return *this;
             }
 
-            RangeIterator<P,N> operator++(int)
+            RangeIterator<N,P> operator++(int)
             {
-                RangeIterator<P,N> tmp = *this;
+                RangeIterator<N,P> tmp = *this;
                 ++(*this); 
                 return tmp;
             }
 
-            RangeIterator<P,N>& operator--()
+            RangeIterator<N,P>& operator--()
             {
                 for (int i=0; i<N; ++i) {
                     int s = N-i-1;
@@ -156,9 +156,9 @@ namespace DG
                 return *this;
             }
 
-            RangeIterator<P,N> operator--(int)
+            RangeIterator<N,P> operator--(int)
             {
-                RangeIterator<P,N> tmp = *this;
+                RangeIterator<N,P> tmp = *this;
                 --(*this);
                 return tmp;
             }

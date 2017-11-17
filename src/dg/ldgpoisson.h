@@ -12,11 +12,11 @@
 
 namespace DG
 {
-    template<int P, int N>
+    template<int N, int P>
     struct LDGOperators
     {
         /** @brief The number of nodal points per element */
-        static const int npl = Master<P,N>::npl;
+        static const int npl = Master<N,P>::npl;
         /** @brief The type of the matrix blocks */
         typedef typename SparseBlockMatrix<npl>::Block Block;
         /** @brief Mass matrix */
@@ -35,7 +35,7 @@ namespace DG
         {
             Timer::tic();
             A = T;
-            KronMat<P,N> GT_M, GT_M_G;
+            KronMat<N,P> GT_M, GT_M_G;
             for (int d = 0; d < N; ++d) {
                 for (int k = 0; k < M.blockRows(); ++k) {
                     const auto& cols = G[d].colsInRow(k);
@@ -52,17 +52,17 @@ namespace DG
         }
     };
 
-    template<int P, int N>
+    template<int N, int P>
     class LDGPoisson
     {
         public:
             /** @brief Constructor from mesh, boundary conditions, and penalty parameters */
-            LDGPoisson(const Mesh<P,N>& mesh_, BoundaryConditions<P,N> bcs_, double tau0_ = 1, double tauD_ = 1) :
+            LDGPoisson(const Mesh<N,P>& mesh_, BoundaryConditions<N,P> bcs_, double tau0_ = 1, double tauD_ = 1) :
                 mesh(&mesh_),
                 bcs(bcs_),
                 tau0(tau0_),
                 tauD(tauD_),
-                ops_(std::make_shared<LDGOperators<P,N>>()),
+                ops_(std::make_shared<LDGOperators<N,P>>()),
                 rhs(mesh_, 0)
             {
                 // Reset the matrices to be the correct size
@@ -88,10 +88,10 @@ namespace DG
              *
              *  @param[in] f : The forcing function
              */
-            Function<P,N> computeRHS(Function<P,N>& f);
+            Function<N,P> computeRHS(Function<N,P>& f);
 
             /** @brief Get the operators */
-            std::shared_ptr<LDGOperators<P,N>> ops()
+            std::shared_ptr<LDGOperators<N,P>> ops()
             {
                 return ops_;
             }
@@ -116,21 +116,21 @@ namespace DG
             void add_source_terms();
 
             /** @brief The mesh on which to solve */
-            const Mesh<P,N>* mesh;
+            const Mesh<N,P>* mesh;
             /** @brief The boundary conditions */
-            BoundaryConditions<P,N> bcs;
+            BoundaryConditions<N,P> bcs;
             /** @brief The penalty parameters */
             double tau0, tauD;
             /** @brief The order of the polynomial on each element */
             static const int p = P-1;
             /** @brief The number of nodal points per element */
-            static const int npl = Master<P,N>::npl;
+            static const int npl = Master<N,P>::npl;
             /** @brief The LDG operators */
-            std::shared_ptr<LDGOperators<P,N>> ops_;
+            std::shared_ptr<LDGOperators<N,P>> ops_;
             /** @brief Dirichlet contribution to RHS */
             std::array<Vector,N> Jg;
             /** @brief Right-hand side */
-            Function<P,N> rhs;
+            Function<N,P> rhs;
     };
 }
 

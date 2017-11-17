@@ -25,7 +25,7 @@ namespace DG
     };
 
     /** @brief A multigrid solver */
-    template<int P, int N>
+    template<int N, int P>
     class Multigrid
     {
         public:
@@ -33,7 +33,7 @@ namespace DG
             struct Parameters;
             struct Level;
 
-            typedef std::shared_ptr<LDGOperators<P,N>> OperatorsPtr;
+            typedef std::shared_ptr<LDGOperators<N,P>> OperatorsPtr;
 
             /** @brief Constructor
              *
@@ -41,7 +41,7 @@ namespace DG
              *  @param[in] hierarchy : The hierarchy of interpolation operators
              *  @param[in] params    : The multigrid parameters
              */
-            Multigrid(const OperatorsPtr& ops, const InterpolationHierarchy<P,N>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const OperatorsPtr& ops, const InterpolationHierarchy<N,P>& hierarchy, const Parameters& params = Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params)
             {
@@ -135,18 +135,18 @@ namespace DG
             }
 
             /** @brief The sequence of interpolation operators that define the multigrid hierarchy */
-            const InterpolationHierarchy<P,N>* hierarchy_;
+            const InterpolationHierarchy<N,P>* hierarchy_;
             /** @brief The levels in the multigrid hierarchy */
             std::vector<std::unique_ptr<Level>> levels_;
             /** @brief The multigrid parameters */
             Parameters params_;
             /** @brief The number of nodal points per element */
-            static const int npl = Master<P,N>::npl;
+            static const int npl = Master<N,P>::npl;
     };
 
     /** @brief The parameters to use in multigrid */
-    template<int P, int N>
-    struct Multigrid<P,N>::Parameters
+    template<int N, int P>
+    struct Multigrid<N,P>::Parameters
     {
         /** @brief The relaxation method */
         Relaxation relaxation = kGaussSeidel;
@@ -161,8 +161,8 @@ namespace DG
     };
 
     /** @brief A level in the multigrid hierarchy */
-    template<int P, int N>
-    struct Multigrid<P,N>::Level
+    template<int N, int P>
+    struct Multigrid<N,P>::Level
     {
         typedef typename SparseBlockMatrix<npl>::Block Block;
 
@@ -201,14 +201,14 @@ namespace DG
             params(params_),
             level(level_)
         {
-            ops = std::make_shared<LDGOperators<P,N>>();
+            ops = std::make_shared<LDGOperators<N,P>>();
             x.resize(T.cols());
             b.resize(T.cols());
             r.resize(T.cols());
 
             // Coarse mass matrix: M_c = T^T M_f T
             ops->M.reset(T.blockCols(), T.blockCols());
-            KronMat<P,N> TT_M, TT_M_T;
+            KronMat<N,P> TT_M, TT_M_T;
             for (int k = 0; k < fineOps->M.blockRows(); ++k) {
                 const auto& cols = T.colsInRow(k);
                 for (int i : cols) {
@@ -344,7 +344,7 @@ namespace DG
         }
 
         /** @brief The operators for this level */
-        std::shared_ptr<LDGOperators<P,N>> ops;
+        std::shared_ptr<LDGOperators<N,P>> ops;
         /** @brief The Cholesky decomposition for the block diagonal */
         std::vector<Eigen::LDLT<Block>> Dinv;
         /** @brief The solution */

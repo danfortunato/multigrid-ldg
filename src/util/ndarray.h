@@ -21,8 +21,8 @@ namespace DG
     class NDArray;
 
     /** @brief An N-dimensional array with extent P */
-    template<typename T, int P, int N>
-    class NDArray<T,P,N>
+    template<typename T, int N, int P>
+    class NDArray<T,N,P>
     {
         public:
             NDArray() = default;
@@ -67,10 +67,10 @@ namespace DG
             }
 
             // Iterators
-            friend class NDArrayIterator<T,P,N>;
-            friend class NDArrayConstIterator<T,P,N>;
-            typedef NDArrayIterator<T,P,N> iterator;
-            typedef NDArrayConstIterator<T,P,N> const_iterator;
+            friend class NDArrayIterator<T,N,P>;
+            friend class NDArrayConstIterator<T,N,P>;
+            typedef NDArrayIterator<T,N,P> iterator;
+            typedef NDArrayConstIterator<T,N,P> const_iterator;
             iterator begin() { return iterator(this); }
             iterator end() { return iterator(this,0); }
             const_iterator begin() const { return const_iterator(this); }
@@ -190,22 +190,22 @@ namespace DG
      *****************/
 
     /** @brief An iterator for an n-dimensional array with extent P */
-    template<typename T, int P, int N>
-    class NDArrayIterator<T,P,N> : public RangeIterator<P,N>
+    template<typename T, int N, int P>
+    class NDArrayIterator<T,N,P> : public RangeIterator<N,P>
     {
         public:
-            NDArrayIterator(NDArray<T,P,N>* array) :
+            NDArrayIterator(NDArray<T,N,P>* array) :
                 array_(array)
             {}
 
-            NDArrayIterator(NDArray<T,P,N>* array, const int) :
-                RangeIterator<P,N>(0),
+            NDArrayIterator(NDArray<T,N,P>* array, const int) :
+                RangeIterator<N,P>(0),
                 array_(array)
             {}
 
             T& operator*() const
             {
-                return array_->data_[RangeIterator<P,N>::linearIndex()];
+                return array_->data_[RangeIterator<N,P>::linearIndex()];
             }
 
             T* operator->() const
@@ -214,26 +214,26 @@ namespace DG
             }
 
         private:
-            NDArray<T,P,N>* array_;
+            NDArray<T,N,P>* array_;
     };
 
     /** @brief A const iterator for an n-dimensional array with extent P */
-    template<typename T, int P, int N>
-    class NDArrayConstIterator<T,P,N> : public RangeIterator<P,N>
+    template<typename T, int N, int P>
+    class NDArrayConstIterator<T,N,P> : public RangeIterator<N,P>
     {
         public:
-            NDArrayConstIterator(const NDArray<T,P,N>* array) :
+            NDArrayConstIterator(const NDArray<T,N,P>* array) :
                 array_(array)
             {}
 
-            NDArrayConstIterator(const NDArray<T,P,N>* array, const int) :
-                RangeIterator<P,N>(0),
+            NDArrayConstIterator(const NDArray<T,N,P>* array, const int) :
+                RangeIterator<N,P>(0),
                 array_(array)
             {}
 
             const T& operator*() const
             {
-                return array_->data_[RangeIterator<P,N>::linearIndex()];
+                return array_->data_[RangeIterator<N,P>::linearIndex()];
             }
 
             const T* operator->() const
@@ -242,7 +242,7 @@ namespace DG
             }
 
         private:
-            const NDArray<T,P,N>* array_;
+            const NDArray<T,N,P>* array_;
     };
 
     /** @brief An iterator for an N-dimensional array */

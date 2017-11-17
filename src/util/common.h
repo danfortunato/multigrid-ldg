@@ -22,7 +22,7 @@ namespace DG
     }
 
     /** Compile-time-sized matrix */
-    template<int M, int N>
+    template<int M, int N = M>
     using Mat = Eigen::Matrix<double,M,N,Eigen::RowMajor>;
 
     /** Runtime-sized matrix */
@@ -44,31 +44,31 @@ namespace DG
     using Diag = Eigen::DiagonalMatrix<double,N>;
 
     /** Compile-time-sized tensor product matrix */
-    template<int P, int N>
-    using KronMat = Eigen::Matrix<double,ipow(P,N),ipow(P,N),Eigen::RowMajor>;
+    template<int N, int P, int Q = P>
+    using KronMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N),Eigen::RowMajor>;
 
     /** Compile-time-sized tensor product vector */
-    template<int P, int N>
+    template<int N, int P>
     using KronVec = Eigen::Matrix<double,ipow(P,N),1>;
 
     /** Compile-time-sized tensor product diagonal matrix */
-    template<int P, int N>
+    template<int N, int P>
     using KronDiag = Eigen::DiagonalMatrix<double,ipow(P,N)>;
 
     /** Compile-time-sized slicing matrix */
-    template<int P, int N>
+    template<int N, int P>
     using SliceMat = Eigen::Matrix<double,ipow(P,N-1),ipow(P,N),Eigen::RowMajor>;
 
     /** Compile-time-sized evaluation matrix */
-    template<int P, int Q, int N>
+    template<int N, int P, int Q>
     using EvalMat = Eigen::Matrix<double,ipow(Q,N-1),ipow(P,N),Eigen::RowMajor>;
 
     /** Compile-time-sized element integration matrix */
-    template<int P, int Q, int N>
+    template<int N, int P, int Q>
     using ElemQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N),Eigen::RowMajor>;
 
     /** Compile-time-sized face integration matrix */
-    template<int P, int Q, int N>
+    template<int N, int P, int Q>
     using FaceQuadMat = Eigen::Matrix<double,ipow(P,N),ipow(Q,N-1),Eigen::RowMajor>;
 
     /** Wrapper to convert raw pointer to Eigen */

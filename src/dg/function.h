@@ -13,16 +13,16 @@
 namespace DG
 {
     // Forward declaration
-    template<int P, int N>
+    template<int N, int P>
     class Mesh;
 
     /** @brief A DG function defined over a mesh */
-    template<int P, int N>
+    template<int N, int P>
     class Function
     {
         public:
             /** @brief Construct an empty function over a mesh */
-            Function(const Mesh<P,N>& mesh_) :
+            Function(const Mesh<N,P>& mesh_) :
                 coeffs(mesh_.ne),
                 mesh(&mesh_),
                 vec_(data(), size(), 1),
@@ -30,8 +30,8 @@ namespace DG
             {}
 
             /** @brief Construct a constant function over a mesh */
-            Function(const Mesh<P,N>& mesh_, double value) :
-                coeffs(mesh_.ne, NDArray<double,P,N>(value)),
+            Function(const Mesh<N,P>& mesh_, double value) :
+                coeffs(mesh_.ne, NDArray<double,N,P>(value)),
                 mesh(&mesh_),
                 vec_(data(), size(), 1),
                 elemvec_(data())
@@ -39,14 +39,14 @@ namespace DG
 
             /** @brief Construct a function over the mesh from a given function handle.
              *         This will be the nodal interpolant. */
-            Function(const Mesh<P,N>& mesh_, const std::function<double(Tuple<double,N>)>& f) :
+            Function(const Mesh<N,P>& mesh_, const std::function<double(Tuple<double,N>)>& f) :
                 mesh(&mesh_),
                 vec_(data(), size(), 1),
                 elemvec_(data())
             {
                 coeffs.resize(mesh->ne);
                 for (int elem = 0; elem < mesh->ne; ++elem) {
-                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
                         coeffs[elem](it.index()) = f(mesh->elements[elem].dgnodes(it.index()));
                     }
                 }
@@ -93,16 +93,16 @@ namespace DG
             }
 
             /** @brief Represent the function's coefficients for a given element as a Vector */
-            Map<KronVec<P,N>>& vec(int elem)
+            Map<KronVec<N,P>>& vec(int elem)
             {
-                new (&elemvec_) Map<KronVec<P,N>>(data(elem));
+                new (&elemvec_) Map<KronVec<N,P>>(data(elem));
                 return elemvec_;
             }
 
             /** @brief Represent the function's coefficients for a given element as a Vector (const version) */
-            const Map<const KronVec<P,N>>& vec(int elem) const
+            const Map<const KronVec<N,P>>& vec(int elem) const
             {
-                new (&elemvec_) Map<const KronVec<P,N>>(data(elem));
+                new (&elemvec_) Map<const KronVec<N,P>>(data(elem));
                 return elemvec_;
             }
 
@@ -125,7 +125,7 @@ namespace DG
             {
                 double norm = 0;
                 for (int elem = 0; elem < mesh->ne; ++elem) {
-                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
                         norm = std::max(norm, std::abs(coeffs[elem](it.index())));
                     }
                 }
@@ -137,13 +137,13 @@ namespace DG
             {
                 double mean = 0;
                 for (int elem = 0; elem < mesh->ne; ++elem) {
-                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
                         mean += coeffs[elem](it.index());
                     }
                 }
-                mean /= NDArray<double,P,N>::size() * coeffs.size();
+                mean /= NDArray<double,N,P>::size() * coeffs.size();
                 for (int elem = 0; elem < mesh->ne; ++elem) {
-                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
                         coeffs[elem](it.index()) -= mean;
                     }
                 }
@@ -157,7 +157,7 @@ namespace DG
 
                 ofs << P << " " << N << " " << mesh->ne << std::endl;
                 for (int elem = 0; elem < mesh->ne; ++elem) {
-                    for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
                         for (int i=0; i<N; ++i) {
                             ofs << mesh->elements[elem].dgnodes(it.index())[i] << " ";
                         }
@@ -170,13 +170,13 @@ namespace DG
             }
 
             /** The basis coefficients */
-            std::vector<NDArray<double,P,N>> coeffs;
+            std::vector<NDArray<double,N,P>> coeffs;
 
         private:
             /** The mesh this function lives on */
-            const Mesh<P,N>* mesh;
+            const Mesh<N,P>* mesh;
             Map<Vector> vec_;
-            Map<KronVec<P,N>> elemvec_;
+            Map<KronVec<N,P>> elemvec_;
     };
 
     //operator +, -, *, /, +=, ==, etc...

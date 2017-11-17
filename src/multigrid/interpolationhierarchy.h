@@ -9,13 +9,13 @@
 namespace DG
 {
     /** @brief A hierarchy of interpolation operators */
-    template<int P, int N>
+    template<int N, int P>
     class InterpolationHierarchy
     {
         public:
             /** @brief Constructor
              *
-             *  @param[in] qt : The quadtree defining geometric hierarchy
+             *  @param[in] qt : The quadtree defining the geometric hierarchy
              */
             InterpolationHierarchy(const Quadtree<N>& qt) :
                 qt_(&qt)
@@ -54,9 +54,9 @@ namespace DG
                         
                         // Construct a matrix that evaluates the parent
                         // polynomial at the fine-level nodes
-                        KronMat<P,N> E;
-                        for (RangeIterator<P,N> it; it != Range<P,N>::end(); ++it) {
-                            Tuple<double,N> finenode = Master<P,N>::dgnodes(it.index(), relcell);
+                        KronMat<N,P> E;
+                        for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                            Tuple<double,N> finenode = Master<N,P>::dgnodes(it.index(), relcell);
                             int i = it.linearIndex();
                             E.row(i) = LagrangePoly<P>::eval(finenode);
                         }
@@ -72,7 +72,7 @@ namespace DG
             }
 
             /** @brief The interpolation operators */
-            std::vector<SparseBlockMatrix<Master<P,N>::npl>> T;
+            std::vector<SparseBlockMatrix<Master<N,P>::npl>> T;
 
         private:
             /** @brief The quadtree */
