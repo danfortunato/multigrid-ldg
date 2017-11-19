@@ -341,6 +341,7 @@ namespace DG
 
                 if (i == (int)levels_.size()-1) {
                     // Coarse solve
+                    levels_[i]->b.array() -= levels_[i]->b.mean();
                     levels_[i]->solve();
                 } else {
                     // Pre-smooth
@@ -513,8 +514,16 @@ namespace DG
                 params_(params),
                 level_(level)
             {}
-            void vcycle() { level_->solve(); } // The coarsest V-cycle is just a coarse solve
+
+            // The coarsest V-cycle is just a coarse solve
+            void vcycle()
+            {
+                level_->b.array() -= level_->b.mean();
+                level_->solve();
+            }
+
             LevelPtr<N,P> level() { return level_; }
+
         private:
             const InterpolationHierarchy<N,P,StopCoarsening>* hierarchy_;
             Parameters params_;

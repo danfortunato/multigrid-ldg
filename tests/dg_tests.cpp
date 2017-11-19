@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
             break;
         case DG::kNeumann:
             ufun = [](DG::Tuple<double,N> x) { return cos(2*M_PI*x[0])*cos(2*M_PI*x[1]) + x[0]*(1-x[0]) + x[1]*(1-x[1]); };
-            ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*cos(2*M_PI*x[0])*cos(2*M_PI*x[1])+ 4.0; };
+            ffun = [](DG::Tuple<double,N> x) { return 8*M_PI*M_PI*cos(2*M_PI*x[0])*cos(2*M_PI*x[1]) + 4.0; };
             bcs = DG::BoundaryConditions<N,P>::Neumann(mesh, -1.0);
             break;
         case DG::kPeriodic:
@@ -63,7 +63,6 @@ int main(int argc, char* argv[])
     // Set up the test
     DG::Function<N,P> u_true(mesh, ufun);
     DG::Function<N,P> f(mesh, ffun);
-    if (bctype == DG::kNeumann || bctype == DG::kPeriodic) u_true.meanZero();
 
     // Discretize the Poisson problem
     DG::LDGPoisson<N,P> poisson(mesh, bcs, tau0, tauD);
@@ -76,13 +75,13 @@ int main(int argc, char* argv[])
         mg.solution().setZero();
         mg.rhs() = b;
         mg.vcycle();
-        DG::Vector x = mg.solution();
-        return x;
+        return mg.solution();
     };
     DG::Timer::toc("Build multigrid hierarchy");
 
     // Add the forcing function to the RHS
     DG::Function<N,P> rhs = poisson.computeRHS(f);
+    if (bctype == DG::kNeumann || bctype == DG::kPeriodic) rhs.meanZero();
 
     // Solve with MGPCG
     DG::Timer::tic();
