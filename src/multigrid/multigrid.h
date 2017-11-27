@@ -350,7 +350,6 @@ namespace DG
                     // Coarse-grid correction
                     levels_[i]->computeResidual();
                     restrictResidual(i);
-                    //levels_[i+1]->x.setZero(levels_[i+1]->ops->A.cols());
                     levels_[i+1]->x.setZero();
                     vcycle(i+1);
                     correctSolution(i);
@@ -472,7 +471,6 @@ namespace DG
                 // Coarse-grid correction
                 level_->computeResidual();
                 restrictResidual();
-                //below_.level()->x.setZero(below_.level()->ops->A.cols());
                 below_.level()->x.setZero();
                 below_.vcycle();
                 correctSolution();

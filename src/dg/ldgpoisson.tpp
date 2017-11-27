@@ -44,36 +44,14 @@ namespace DG
     {
         Timer::tic();
 
-        KronMat<N,P> diff;
-        // Create the differentiation matrix in each dimension
         for (int i=0; i<N; ++i) {
-            diff = KronMat<N,P>::Zero();
-            // Compute the tensor product of the 1D differentiation matrix
-            // with the appropriate identity matrices
-            for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
-                for (RangeIterator<N,P> jt; jt != Range<N,P>::end(); ++jt) {
-                    // There is only a nonzero entry when the indices for all
-                    // the identity matrices are on the diagonal
-                    bool nonzero = true;
-                    for (int k=0; k<N; ++k) {
-                        if (k!=i && it(k)!=jt(k)) {
-                            nonzero = false;
-                            break;
-                        }
-                    }
-                    if (nonzero) {
-                        int bi = it.linearIndex();
-                        int bj = jt.linearIndex();
-                        diff(bi,bj) = GaussLobatto<P>::diff(it(i),jt(i));
-                    }
-                }
-            }
-
+            // Create the differentiation matrix in each dimension
+            KronMat<N,P> diff = Master<N,P>::diff(i);
             // Place this gradient component in the global matrix for all
             // elements
             for (const auto& e : mesh->elements) {
                 int j = e.lid;
-                double jac = 1/e.cell.width(i);
+                double jac = 1.0/e.cell.width(i);
                 ops_->G[i].addToBlock(j, j, jac*diff);
             }
         }

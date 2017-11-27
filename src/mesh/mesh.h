@@ -18,8 +18,7 @@ namespace DG
     template<int N, int P>
     struct Face
     {
-        Face(const Mesh<N,P>& mesh_, int left_, int right_, int dim_, Vec<N> normal_, Cell<N> cell_) :
-            mesh(&mesh_),
+        Face(const Mesh<N,P>& mesh, int left_, int right_, int dim_, Vec<N> normal_, Cell<N> cell_) :
             left(left_),
             right(right_),
             dim(dim_),
@@ -27,15 +26,15 @@ namespace DG
             cell(cell_)
         {
             // Make sure this face is actually codimension one in the specified dimension
-            // bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
-            //                         (cell.lower[dim] == cell.upper[dim]));
-            //assert(codimension_one);
+            bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
+                                    (cell.lower[dim] == cell.upper[dim]));
+            assert(codimension_one);
 
             // Boundary faces are canonical
             canonical = true;
             if (interiorQ()) {
-                Cell<N> lcell = mesh->elements[left].cell;
-                Cell<N> rcell = mesh->elements[right].cell;
+                Cell<N> lcell = mesh.elements[left].cell;
+                Cell<N> rcell = mesh.elements[right].cell;
                 lcell.lower[dim] = lcell.upper[dim];
                 rcell.upper[dim] = rcell.lower[dim];
 
@@ -113,8 +112,6 @@ namespace DG
             return boundaryQ() ? right : 0;
         }
 
-        /** A pointer to the mesh */
-        const Mesh<N,P>* mesh;
         /** Index of element on the "left"  (anti-normal direction) */
         int left;
         /** Index of element on the "right" (normal direction) */
@@ -138,8 +135,7 @@ namespace DG
     template<int N, int P>
     struct Element
     {
-        Element(const Mesh<N,P>& mesh_, int lid_, int gid_, Cell<N> cell_) :
-            mesh(&mesh_),
+        Element(int lid_, int gid_, Cell<N> cell_) :
             lid(lid_),
             gid(gid_),
             cell(cell_)
@@ -166,13 +162,11 @@ namespace DG
         }
 
         /** The index-th node in the element */
-        Tuple<double,N> dgnodes(Tuple<int,N> index) const
+        Tuple<double,N> dgnodes(const Tuple<int,N>& index) const
         {
             return Master<N,P>::dgnodes(index, cell);
         }
 
-        /** A pointer to the mesh */
-        const Mesh<N,P>* mesh;
         /** The local ID of the element */
         int lid;
         /** The global ID of the element */
@@ -208,7 +202,7 @@ namespace DG
                 int lid = elements.size();
                 G2L[gid] = lid;
                 L2G[lid] = gid;
-                Element<N,P> elem(*this, lid, gid, qt[gid].cell);
+                Element<N,P> elem(lid, gid, qt[gid].cell);
                 elements.push_back(elem);
             }
             Timer::toc("Construct elements");

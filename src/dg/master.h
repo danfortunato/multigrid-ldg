@@ -32,7 +32,7 @@ namespace DG
         /** Inverse mass matrix */
         static const KronMat<N,P> invmass;
         /** The index-th node in a given cell */
-        static Tuple<double,N> dgnodes(Tuple<int,N> index, Cell<N> cell = Cell<N>())
+        static Tuple<double,N> dgnodes(const Tuple<int,N>& index, const Cell<N>& cell = Cell<N>())
         {
             assert((0 <= index).all() && (index < P).all());
             Tuple<double,N> node;
@@ -40,6 +40,32 @@ namespace DG
                 node[i] = GaussLobatto<P>::nodes[index[i]];
             }
             return cell.lower + cell.width() * node;
+        }
+        /** The differentiation matrix in the i-th dimension */
+        static KronMat<N,P> diff(int i)
+        {
+            KronMat<N,P> diff = KronMat<N,P>::Zero();
+            // Compute the tensor product of the 1D differentiation matrix
+            // with the appropriate identity matrices
+            for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                for (RangeIterator<N,P> jt; jt != Range<N,P>::end(); ++jt) {
+                    // There is only a nonzero entry when the indices for all
+                    // the identity matrices are on the diagonal
+                    bool nonzero = true;
+                    for (int k=0; k<N; ++k) {
+                        if (k!=i && it(k)!=jt(k)) {
+                            nonzero = false;
+                            break;
+                        }
+                    }
+                    if (nonzero) {
+                        int bi = it.linearIndex();
+                        int bj = jt.linearIndex();
+                        diff(bi,bj) = GaussLobatto<P>::diff(it(i),jt(i));
+                    }
+                }
+            }
+            return diff;
         }
     };
 
@@ -49,7 +75,7 @@ namespace DG
         /** The Lagrange polynomial denominators */
         static const double denom[P];
         /** Evaluate the P 1-D Lagrange polynomials at the point x */
-        static Vec<P> eval(const double& x)
+        static Vec<P> eval(double x)
         {
             Vec<P> lagrange;
             // First compute the products to the left of the split
