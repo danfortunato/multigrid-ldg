@@ -16,39 +16,42 @@ namespace DG
     template<int N, int P, int... Ps>
     class Multigrid;
 
-    /** @brief The relaxation method */
-    enum Relaxation
-    {
-        kJacobi,
-        kGaussSeidel
-    };
-
-    /** @brief The solver for the coarse problem */
-    enum Solver
-    {
-        kCholesky,
-        kRelaxation
-    };
-
-    /** @brief The parameters to use in multigrid */
-    struct Parameters
-    {
-        /** @brief The relaxation method */
-        Relaxation relaxation = kGaussSeidel;
-        /** @brief The relaxation damping factor */
-        double omega = 0.8;
-        /** @brief The solver for the coarse problem */
-        Solver solver = kRelaxation;
-        /** @brief The number of pre-smooths */
-        int npre = 3;
-        /** @brief The number of post-smooths */
-        int npost = 3;
-    };
-
     template<int N, int P>
     using OperatorsPtr = std::shared_ptr<LDGOperators<N,P>>;
     template<int N, int P>
     using LevelPtr = std::shared_ptr<Level<N,P>>;
+
+    namespace MG
+    {
+        /** @brief The relaxation method */
+        enum Relaxation
+        {
+            kJacobi,
+            kGaussSeidel
+        };
+
+        /** @brief The solver for the coarse problem */
+        enum Solver
+        {
+            kCholesky,
+            kRelaxation
+        };
+
+        /** @brief The parameters to use in multigrid */
+        struct Parameters
+        {
+            /** @brief The relaxation method */
+            Relaxation relaxation = kGaussSeidel;
+            /** @brief The relaxation damping factor */
+            double omega = 0.8;
+            /** @brief The solver for the coarse problem */
+            Solver solver = kCholesky;
+            /** @brief The number of pre-smooths */
+            int npre = 3;
+            /** @brief The number of post-smooths */
+            int npost = 3;
+        };
+    }
 
     /** @brief A level in the multigrid hierarchy */
     template<int N, int P>
@@ -68,7 +71,7 @@ namespace DG
          *  @param[in] params_ : The parameters
          *  @param[in] num_    : The level number
          */
-        Level(const OperatorsPtr<N,P>& fineOps, const Parameters& params_ = Parameters(), int num_ = 0) :
+        Level(const OperatorsPtr<N,P>& fineOps, const MG::Parameters& params_ = MG::Parameters(), int num_ = 0) :
             params(params_),
             num(num_)
         {
@@ -91,7 +94,7 @@ namespace DG
          *  @param[in] num_    : The level number
          */
         template<int P1>
-        Level(const OperatorsPtr<N,P1>& fineOps, const InterpolationOperator<N,P1,P>& T, const Parameters& params_, int num_) :
+        Level(const OperatorsPtr<N,P1>& fineOps, const InterpolationOperator<N,P1,P>& T, const MG::Parameters& params_, int num_) :
             params(params_),
             num(num_)
         {
@@ -158,11 +161,11 @@ namespace DG
         void solve()
         {
             switch (params.solver) {
-                case kRelaxation:
+                case MG::kRelaxation:
                     relax(params.npre);
                     relax(params.npost, true);
                     break;
-                case kCholesky:
+                case MG::kCholesky:
                     assert(ops->A.blockRows() == 1); // Ensure there is only one element
                     x = Dinv[0].solve(b);
                     break;
@@ -180,10 +183,10 @@ namespace DG
         {
             for (int i=0; i<n; ++i) {
                 switch (params.relaxation) {
-                    case kJacobi:
+                    case MG::kJacobi:
                         jacobi(params.omega);
                         break;
-                    case kGaussSeidel:
+                    case MG::kGaussSeidel:
                         gauss_seidel(params.omega, reverse);
                         break;
                     default:
@@ -249,7 +252,7 @@ namespace DG
         /** @brief The residual */
         Vector r;
         /** @brief The multigrid parameters */
-        Parameters params;
+        MG::Parameters params;
         /** @brief The level number */
         int num;
     };
@@ -265,7 +268,7 @@ namespace DG
              *  @param[in] hierarchy : The hierarchy of h-interpolation operators
              *  @param[in] params    : The multigrid parameters
              */
-            Multigrid(const OperatorsPtr<N,P>& ops, const InterpolationHierarchy<N,P>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const OperatorsPtr<N,P>& ops, const InterpolationHierarchy<N,P>& hierarchy, const MG::Parameters& params = MG::Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params)
             {
@@ -283,7 +286,7 @@ namespace DG
              *  @param[in] hierarchy : The hierarchy of h-interpolation operators
              *  @param[in] params    : The multigrid parameters
              */
-            Multigrid(const LevelPtr<N,P>& level, const InterpolationHierarchy<N,P>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const LevelPtr<N,P>& level, const InterpolationHierarchy<N,P>& hierarchy, const MG::Parameters& params = MG::Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params)
             {
@@ -359,6 +362,23 @@ namespace DG
                 }
             }
 
+            /** @brief Compute the matrix form of a V-cycle */
+            Matrix vcycle_matrix()
+            {
+                int rows = level()->ops->A.rows();
+                Matrix V(rows, rows);
+                Vector ei = Vector::Zero(rows);
+                for (int i=0; i<rows; ++i) {
+                    ei(i) = 1;
+                    rhs() = ei;
+                    solution().setZero();
+                    vcycle();
+                    V.col(i) = solution();
+                    ei(i) = 0;
+                }
+                return V;
+            }
+
         private:
             /** @brief Setup up the h-multigrid hierarchy */
             void setup()
@@ -389,7 +409,7 @@ namespace DG
             /** @brief The levels in the multigrid hierarchy */
             std::vector<LevelPtr<N,P>> levels_;
             /** @brief The multigrid parameters */
-            Parameters params_;
+            MG::Parameters params_;
     };
 
     /** @brief An hp- or p-multigrid solver */
@@ -403,7 +423,7 @@ namespace DG
              *  @param[in] hierarchy : The hierarchy of hp-interpolation operators
              *  @param[in] params    : The multigrid parameters
              */
-            Multigrid(const OperatorsPtr<N,P1>& ops, const InterpolationHierarchy<N,P1,P2,Ps...>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const OperatorsPtr<N,P1>& ops, const InterpolationHierarchy<N,P1,P2,Ps...>& hierarchy, const MG::Parameters& params = MG::Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params),
                 below_(std::make_shared<Level<N,P2>>(ops, hierarchy.T, params, 1), hierarchy.below, params)
@@ -418,7 +438,7 @@ namespace DG
              *  @param[in] hierarchy : The hierarchy of hp-interpolation operators
              *  @param[in] params    : The multigrid parameters
              */
-            Multigrid(const LevelPtr<N,P1>& level, const InterpolationHierarchy<N,P1,P2,Ps...>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const LevelPtr<N,P1>& level, const InterpolationHierarchy<N,P1,P2,Ps...>& hierarchy, const MG::Parameters& params = MG::Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params),
                 below_(std::make_shared<Level<N,P2>>(level->ops, hierarchy.T, params, level->num+1), hierarchy.below, params),
@@ -462,7 +482,7 @@ namespace DG
                 return level_;
             }
 
-            /** @brief Perform a V-cycle starting at a specific level */
+            /** @brief Perform a V-cycle */
             void vcycle()
             {
                 // Pre-smooth
@@ -477,6 +497,23 @@ namespace DG
 
                 // Post-smooth
                 level_->relax(params_.npost, true);
+            }
+
+            /** @brief Compute the matrix form of a V-cycle */
+            Matrix vcycle_matrix()
+            {
+                int rows = level()->ops->A.rows();
+                Matrix V(rows, rows);
+                Vector ei = Vector::Zero(rows);
+                for (int i=0; i<rows; ++i) {
+                    ei(i) = 1;
+                    rhs() = ei;
+                    solution().setZero();
+                    vcycle();
+                    V.col(i) = solution();
+                    ei(i) = 0;
+                }
+                return V;
             }
 
         private:
@@ -495,7 +532,7 @@ namespace DG
             /** @brief The sequence of hp- or p-interpolation operators that define the multigrid hierarchy */
             const InterpolationHierarchy<N,P1,P2,Ps...>* hierarchy_;
             /** @brief The multigrid parameters */
-            Parameters params_;
+            MG::Parameters params_;
             /** @brief The rest of the multigrid hierarchy */
             Multigrid<N,P2,Ps...> below_;
             /** @brief The current level in the hierarchy */
@@ -507,24 +544,77 @@ namespace DG
     class Multigrid<N,P,StopCoarsening>
     {
         public:
-            Multigrid(const LevelPtr<N,P>& level, const InterpolationHierarchy<N,P,StopCoarsening>& hierarchy, const Parameters& params = Parameters()) :
+            Multigrid(const LevelPtr<N,P>& level, const InterpolationHierarchy<N,P,StopCoarsening>& hierarchy, const MG::Parameters& params = MG::Parameters()) :
                 hierarchy_(&hierarchy),
                 params_(params),
                 level_(level)
             {}
 
-            // The coarsest V-cycle is just a coarse solve
+            /** @brief The solution */
+            const Vector& solution() const
+            {
+                return level_->x;
+            }
+
+            /** @brief The solution */
+            Vector& solution()
+            {
+                return level_->x;
+            }
+
+            /** @brief The right-hand side */
+            const Vector& rhs() const
+            {
+                return level_->b;
+            }
+
+            /** @brief The right-hand side */
+            Vector& rhs()
+            {
+                return level_->b;
+            }
+
+            /** @brief Compute and return the residual */
+            Vector residual()
+            {
+                level_->computeResidual();
+                return level_->r;
+            }
+
+            /** @brief The current level in the hierarchy */
+            LevelPtr<N,P> level()
+            {
+                return level_;
+            }
+
+            /** @brief Perform a V-cycle */
             void vcycle()
             {
+                // The coarsest V-cycle is just a coarse solve
                 level_->b.array() -= level_->b.mean();
                 level_->solve();
             }
 
-            LevelPtr<N,P> level() { return level_; }
+            /** @brief Compute the matrix form of a V-cycle */
+            Matrix vcycle_matrix()
+            {
+                int rows = level()->ops->A.rows();
+                Matrix V(rows, rows);
+                Vector ei = Vector::Zero(rows);
+                for (int i=0; i<rows; ++i) {
+                    ei(i) = 1;
+                    rhs() = ei;
+                    solution().setZero();
+                    vcycle();
+                    V.col(i) = solution();
+                    ei(i) = 0;
+                }
+                return V;
+            }
 
         private:
             const InterpolationHierarchy<N,P,StopCoarsening>* hierarchy_;
-            Parameters params_;
+            MG::Parameters params_;
             LevelPtr<N,P> level_;
     };
 }
