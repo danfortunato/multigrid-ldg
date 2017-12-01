@@ -52,6 +52,26 @@ namespace DG
                 }
             }
 
+            /** @brief Reset the function from a given constant */
+            void reset(double value = 0)
+            {
+                for (int elem = 0; elem < mesh->ne; ++elem) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                        coeffs[elem](it.index()) = value;
+                    }
+                }
+            }
+
+            /** @brief Reset the function from a given function handle */
+            void reset(const std::function<double(Tuple<double,N>)>& f)
+            {
+                for (int elem = 0; elem < mesh->ne; ++elem) {
+                    for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                        coeffs[elem](it.index()) = f(mesh->elements[elem].dgnodes(it.index()));
+                    }
+                }
+            }
+
             /** @brief The total number of coefficients in the function */
             int size() const
             {
