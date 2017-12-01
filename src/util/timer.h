@@ -69,7 +69,17 @@ namespace DG
                 depth--;
 
                 // Print the spool if possible
-                if (depth == 0) print();
+                if (active && depth == 0) print();
+            }
+
+            static void on()
+            {
+                active = true;
+            }
+
+            static void off()
+            {
+                active = false;
             }
 
         private:
@@ -89,12 +99,14 @@ namespace DG
             }
 
             static int depth, next_id;
+            static bool active;
             static std::stack<Event> events;
             static std::vector<Event> spool;
     };
 
     int Timer::depth = 0;
     int Timer::next_id = 0;
+    bool Timer::active = true;
     std::stack<Timer::Event> Timer::events;
     std::vector<Timer::Event> Timer::spool;
 }
