@@ -116,9 +116,9 @@ namespace DG
             };
 
             template<typename T>
-            Quadtree(const T& h, bool periodic_ = false) :
+            Quadtree(const T& h, CoarseningStrategy coarseningStrategy, bool periodic_ = false) :
                 numLevels_(1),
-                coarseningStrategy_(kEqualCoarsening),
+                coarseningStrategy_(coarseningStrategy),
                 periodic(periodic_)
             {
                 tree.push_back(Node(Cell<N>(),0,-1));
@@ -126,7 +126,7 @@ namespace DG
             }
 
             template<typename T>
-            Quadtree(Cell<N> domain, const T& h, bool periodic_ = false) :
+            Quadtree(Cell<N> domain, const T& h, CoarseningStrategy coarseningStrategy, bool periodic_ = false) :
                 numLevels_(1),
                 coarseningStrategy_(kEqualCoarsening),
                 periodic(periodic_)

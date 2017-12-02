@@ -26,9 +26,9 @@ namespace DG
             cell(cell_)
         {
             // Make sure this face is actually codimension one in the specified dimension
-            bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
-                                    (cell.lower[dim] == cell.upper[dim]));
-            assert(codimension_one);
+            // bool codimension_one = ((cell.lower == cell.upper).count() == 1 &&
+            //                        (cell.lower[dim] == cell.upper[dim]));
+            // assert(codimension_one);
 
             // Boundary faces are canonical
             canonical = true;

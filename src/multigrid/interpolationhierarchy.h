@@ -52,25 +52,31 @@ namespace DG
                     // Loop over the fine-level bounding boxes
                     int finelid = 0;
                     for (int finegid : finelevel) {
-                        // Get the coarse-level parent of this fine-level
-                        // bounding box
-                        int coarsegid = (*qt_)[finegid].parent;
-                        
-                        // Compute the fine-level bounding box when the
-                        // parent bounding box is mapped to [0,1]^N
-                        Cell<N> relcell;
-                        relcell.lower = ((*qt_)[finegid].cell.lower - (*qt_)[coarsegid].cell.lower) / (*qt_)[coarsegid].cell.width();
-                        relcell.upper = ((*qt_)[finegid].cell.upper - (*qt_)[coarsegid].cell.lower) / (*qt_)[coarsegid].cell.width();
-                        
-                        // Construct a matrix that evaluates the parent
-                        // polynomial at the fine-level nodes
-                        KronMat<N,P> E;
-                        for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
-                            Tuple<double,N> finenode = Master<N,P>::dgnodes(it.index(), relcell);
-                            int i = it.linearIndex();
-                            E.row(i) = LagrangePoly<P>::eval(finenode);
+                        // Is this element also on the coarse level?
+                        if (qt_->isLeaf((*qt_)[finegid],l+1)) {
+                            T[l].setBlock(finelid, coarseG2L[finegid], KronMat<N,P>::Identity());
+                            finelid++;
+                        } else {
+                            // Get the coarse-level parent of this fine-level
+                            // bounding box
+                            int coarsegid = (*qt_)[finegid].parent;
+
+                            // Compute the fine-level bounding box when the
+                            // parent bounding box is mapped to [0,1]^N
+                            Cell<N> relcell;
+                            relcell.lower = ((*qt_)[finegid].cell.lower - (*qt_)[coarsegid].cell.lower) / (*qt_)[coarsegid].cell.width();
+                            relcell.upper = ((*qt_)[finegid].cell.upper - (*qt_)[coarsegid].cell.lower) / (*qt_)[coarsegid].cell.width();
+
+                            // Construct a matrix that evaluates the parent
+                            // polynomial at the fine-level nodes
+                            KronMat<N,P> E;
+                            for (RangeIterator<N,P> it; it != Range<N,P>::end(); ++it) {
+                                Tuple<double,N> finenode = Master<N,P>::dgnodes(it.index(), relcell);
+                                int i = it.linearIndex();
+                                E.row(i) = LagrangePoly<P>::eval(finenode);
+                            }
+                            T[l].setBlock(finelid++, coarseG2L[coarsegid], E);
                         }
-                        T[l].setBlock(finelid++, coarseG2L[coarsegid], E);
                     }
                 }
             }
