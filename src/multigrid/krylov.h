@@ -27,7 +27,7 @@ namespace DG
         Vector r, d, q, s;
 
         std::cout << std::endl;
-        std::cout << std::setw(20) << std::left << "Cycle";
+        std::cout << std::setw(10) << std::left << "Cycle";
         std::cout << std::setw(20) << std::left << "Residual";
         std::cout << std::setw(20) << std::left << "Convergence";
         std::cout << std::endl << std::endl;
@@ -56,7 +56,7 @@ namespace DG
             beta = delta_new / delta_old;
             d = s + beta * d;
 
-            std::cout << std::setw(20) << std::left << i;
+            std::cout << std::setw(10) << std::left << i;
             std::cout << std::setw(20) << std::left << r.norm(); // sqrt(delta_new)
             std::cout << std::setw(20) << std::left << r.norm()/rnorm_old; // sqrt(beta)
             std::cout << std::endl;

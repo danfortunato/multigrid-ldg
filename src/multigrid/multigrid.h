@@ -37,6 +37,13 @@ namespace DG
             kRelaxation
         };
 
+        /** @brief The coarsening strategy */
+        enum RestrictionMethod
+        {
+            kRAT,
+            kRATRAT
+        };
+
         /** @brief The parameters to use in multigrid */
         struct Parameters
         {
@@ -50,6 +57,8 @@ namespace DG
             int npre = 3;
             /** @brief The number of post-smooths */
             int npost = 3;
+            /** @brief The restriction method */
+            RestrictionMethod restriction = kRATRAT;
         };
     }
 
@@ -103,46 +112,57 @@ namespace DG
             b.resize(T.cols());
             r.resize(T.cols());
 
-            // Coarse mass matrix: M_c = T^T M_f T
-            ops->M.reset(T.blockCols(), T.blockCols());
-            KronMat<N,P,P1> TT_M;
-            KronMat<N,P> TT_M_T;
-            for (int k = 0; k < fineOps->M.blockRows(); ++k) {
-                const auto& cols = T.colsInRow(k);
-                for (int i : cols) {
-                    TT_M = (T.getBlock(k, i).transpose() * fineOps->M.getBlock(k, k)).eval();
-                    for (int j : cols) {
-                        TT_M_T = TT_M * T.getBlock(k, j);
-                        ops->M.addToBlock(i, j, TT_M_T);
+            if (params.restriction == MG::kRATRAT) {
+
+                // Coarse mass matrix: M_c = T^T M_f T
+                ops->M.reset(T.blockCols(), T.blockCols());
+                KronMat<N,P,P1> TT_M;
+                KronMat<N,P> TT_M_T;
+                for (int k = 0; k < fineOps->M.blockRows(); ++k) {
+                    const auto& cols = T.colsInRow(k);
+                    for (int i : cols) {
+                        TT_M = (T.getBlock(k, i).transpose() * fineOps->M.getBlock(k, k)).eval();
+                        for (int j : cols) {
+                            TT_M_T = TT_M * T.getBlock(k, j);
+                            ops->M.addToBlock(i, j, TT_M_T);
+                        }
                     }
                 }
-            }
 
-            // Compute the Cholesky decomposition of M_c
-            for (int i = 0; i < ops->M.blockRows(); ++i) {
-                ops->Minv.emplace_back(ops->M.getBlock(i, i));
-            }
+                // Compute the Cholesky decomposition of M_c
+                for (int i = 0; i < ops->M.blockRows(); ++i) {
+                    ops->Minv.emplace_back(ops->M.getBlock(i, i));
+                }
 
-            // Coarse gradient: G_c = M_c^{-1} T^T M_f G_f T
-            SparseBlockMatrix<Master<N,P1>::npl,npl> temp1, temp2;
-            for (int d=0; d<N; ++d) {
-                multiply_mm(fineOps->G[d], T, temp1);  // P1 x P2
-                multiply_mm(fineOps->M, temp1, temp2); // P1 x P2
-                multiply_mm_t(T, temp2, ops->G[d]);    // P2 x P2
-                for (int i=0; i<ops->M.blockRows(); ++i) {
-                    const auto& cols = ops->G[d].colsInRow(i);
-                    for (int j : cols) {
-                        ops->G[d].setBlock(i, j, ops->Minv[i].solve(ops->G[d].getBlock(i, j)));
+                // Coarse gradient: G_c = M_c^{-1} T^T M_f G_f T
+                SparseBlockMatrix<Master<N,P1>::npl,npl> temp1, temp2;
+                for (int d=0; d<N; ++d) {
+                    multiply_mm(fineOps->G[d], T, temp1);  // P1 x P2
+                    multiply_mm(fineOps->M, temp1, temp2); // P1 x P2
+                    multiply_mm_t(T, temp2, ops->G[d]);    // P2 x P2
+                    for (int i=0; i<ops->M.blockRows(); ++i) {
+                        const auto& cols = ops->G[d].colsInRow(i);
+                        for (int j : cols) {
+                            ops->G[d].setBlock(i, j, ops->Minv[i].solve(ops->G[d].getBlock(i, j)));
+                        }
                     }
                 }
+
+                // Coarse penalty parameters: T_c = T^T T_f T
+                multiply_mm(fineOps->T, T, temp1); // P1 x P2
+                multiply_mm_t(T, temp1, ops->T);   // P2 x P2
+
+                // Coarse Laplacian: A_c = G_c^T M_c G_c + T_c
+                ops->construct_laplacian();
+
+            } else if (params.restriction == MG::kRAT) {
+                // Coarse Laplacian: A_c = T^T A T
+                SparseBlockMatrix<Master<N,P1>::npl,npl> temp1;
+                multiply_mm(fineOps->A, T, temp1);
+                multiply_mm_t(T, temp1, ops->A);
+            } else {
+                throw std::invalid_argument("Unknown restriction method.");
             }
-
-            // Coarse penalty parameters: T_c = T^T T_f T
-            multiply_mm(fineOps->T, T, temp1); // P1 x P2
-            multiply_mm_t(T, temp1, ops->T);   // P2 x P2
-
-            // Coarse Laplacian: A = G_c^T M_c G_c + T_c
-            ops->construct_laplacian();
 
             // Compute the Cholesky decomposition of the block diagonal of A
             for (int i=0; i < ops->A.blockRows(); ++i) {

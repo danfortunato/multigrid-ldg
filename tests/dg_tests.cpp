@@ -33,18 +33,20 @@ namespace DG
     /** @brief The parameters to use in the DG method */
     struct Parameters
     {
-        int p = 2;                                // Polynomial order
-        double dx = 0.125;                        // Mesh spacing
-        DG::BoundaryType bctype = DG::kDirichlet; // Type of boundary condition
-        double tau0 = 0;                          // Interior penalty parameter
-        double tauD = 1000;                       // Dirichlet penalty parameter
-        double cgtol = 1e-8;                      // Tolerance for CG
-        int cgmaxit = 200;                        // Max iterations for CG
-        DG::SolveType solvetype = DG::kMGPCG;     // Type of solver
-        DG::TestType testtype = DG::kConvergence; // Type of test
-        int ncycle = 1;                           // Number of V-cycles
-        DG::MG::Parameters multigrid;             // Multigrid parameters
-        bool dump = false;                        // Flag to dump extra data
+        int p = 2;                                        // Polynomial order
+        double dx = 0.125;                                // Mesh spacing
+        bool adaptive = false;                            // Adaptive mesh refinement
+        CoarseningStrategy coarsening = kEqualCoarsening; // Coarsening strategy
+        DG::BoundaryType bctype = DG::kDirichlet;         // Type of boundary condition
+        double tau0 = 0;                                  // Interior penalty parameter
+        double tauD = 1000;                               // Dirichlet penalty parameter
+        double cgtol = 1e-8;                              // Tolerance for CG
+        int cgmaxit = 200;                                // Max iterations for CG
+        DG::SolveType solvetype = DG::kMGPCG;             // Type of solver
+        DG::TestType testtype = DG::kConvergence;         // Type of test
+        int ncycle = 1;                                   // Number of V-cycles
+        DG::MG::Parameters multigrid;                     // Multigrid parameters
+        bool dump = false;                                // Flag to dump extra data
     };
 }
 
@@ -54,6 +56,8 @@ void print_help()
     std::cout << "Options are:" << std::endl << std::endl;
     std::cout << std::setw(20) << std::left << "   --p"             << std::setw(20) << "Polynomial order" << std::endl;
     std::cout << std::setw(20) << std::left << "   --h"             << std::setw(20) << "Mesh spacing" << std::endl;
+    std::cout << std::setw(20) << std::left << "   --adaptive"      << std::setw(20) << "Adaptive mesh refinement" << std::endl;
+    std::cout << std::setw(20) << std::left << "   --coarsening"    << std::setw(20) << "Coarsening strategy [equal, rapid]" << std::endl;
     std::cout << std::setw(20) << std::left << "   --bc"            << std::setw(20) << "Type of boundary conditions [dirichlet, neumann, periodic]" << std::endl;
     std::cout << std::setw(20) << std::left << "   --tau0"          << std::setw(20) << "Interior penalty parameter" << std::endl;
     std::cout << std::setw(20) << std::left << "   --tauD"          << std::setw(20) << "Dirichlet penalty parameter" << std::endl;
@@ -67,25 +71,36 @@ void print_help()
     std::cout << std::setw(20) << std::left << "   --mg.npre"       << std::setw(20) << "Number of pre-smooths" << std::endl;
     std::cout << std::setw(20) << std::left << "   --mg.npost"      << std::setw(20) << "Number of post-smooths" << std::endl;
     std::cout << std::setw(20) << std::left << "   --mg.ncycle"     << std::setw(20) << "Number of V-cycles" << std::endl;
-    std::cout << std::setw(20) << std::left << "   --dump"          << std::setw(20) << "Data to dump [all, solution]" << std::endl;
-    std::cout << std::setw(20) << std::left << "   --timer"         << std::setw(20) << "Timer on/off [on, off]" << std::endl;
+    std::cout << std::setw(20) << std::left << "   --mg.restriction"<< std::setw(20) << "Restriction method [RAT, RATRAT]" << std::endl;
+    std::cout << std::setw(20) << std::left << "   --dump"          << std::setw(20) << "Data to dump" << std::endl;
+    std::cout << std::setw(20) << std::left << "   --timer"         << std::setw(20) << "Timer on/off" << std::endl;
     std::cout << std::endl;
 }
 
 void parse_args(int argc, char* argv[], DG::Parameters& params)
 {
-    if (argc % 2 == 0) {
-        std::cout << "Incorrect number of command line arguments." << std::endl;
-        print_help();
-        exit(0);
-    }
-
     std::vector<std::string> args(argv, argv+argc);
-    for (int i=1; i<argc; i+=2) {
+    int i=1;
+    while (i < argc) {
         if (args[i] == "--p") {
             params.p = atoi(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--h") {
             params.dx = atof(argv[i+1]);
+            i+=2;
+        } else if (args[i] == "--adaptive") {
+            params.adaptive = true;
+            i++;
+        } else if (args[i] == "--coarsening") {
+            if (args[i+1] == "equal") {
+                params.coarsening = DG::kEqualCoarsening;
+            } else if (args[i+1] == "rapid") {
+                params.coarsening = DG::kRapidCoarsening;
+            } else {
+                print_help();
+                exit(0);
+            }
+            i+=2;
         } else if (args[i] == "--bc") {
             if (args[i+1] == "dirichlet") {
                 params.bctype = DG::kDirichlet;
@@ -97,10 +112,13 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
                 print_help();
                 exit(0);
             }
+            i+=2;
         } else if (args[i] == "--tau0") {
             params.tau0 = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--tauD") {
             params.tauD = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--solver") {
             if (args[i+1] == "cg") {
                 params.solvetype = DG::kCG;
@@ -112,6 +130,7 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
                 print_help();
                 exit(0);
             }
+            i+=2;
         } else if (args[i] == "--test") {
             if (args[i+1] == "solution") {
                 params.testtype = DG::kSolution;
@@ -121,10 +140,13 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
                 print_help();
                 exit(0);
             }
+            i+=2;
         } else if (args[i] == "--cg.tol") {
             params.cgtol = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--cg.maxit") {
             params.cgmaxit = atoi(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--mg.relaxation") {
             if (args[i+1] == "jacobi") {
                 params.multigrid.relaxation = DG::MG::kJacobi;
@@ -134,8 +156,10 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
                 print_help();
                 exit(0);
             }
+            i+=2;
         } else if (args[i] == "--mg.omega") {
             params.multigrid.omega = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--mg.solver") {
             if (args[i+1] == "cholesky") {
                 params.multigrid.solver = DG::MG::kCholesky;
@@ -145,30 +169,32 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
                 print_help();
                 exit(0);
             }
+            i+=2;
         } else if (args[i] == "--mg.npre") {
             params.multigrid.npre = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--mg.npost") {
             params.multigrid.npost = atof(argv[i+1]);
+            i+=2;
         } else if (args[i] == "--mg.ncycle") {
             params.ncycle = atoi(argv[i+1]);
+            i+=2;
+        } else if (args[i] == "--mg.restriction") {
+            if (args[i+1] == "RAT") {
+                params.multigrid.restriction = DG::MG::kRAT;
+            } else if (args[i+1] == "RATRAT") {
+                params.multigrid.restriction = DG::MG::kRATRAT;
+            } else {
+                print_help();
+                exit(0);
+            }
+            i+=2;
         } else if (args[i] == "--dump") {
-            if (args[i+1] == "all") {
-                params.dump = true;
-            } else if (args[i+1] == "solution") {
-                params.dump = false;
-            } else {
-                print_help();
-                exit(0);
-            }
+            params.dump = true;
+            i++;
         } else if (args[i] == "--timer") {
-            if (args[i+1] == "on") {
-                DG::Timer::on();
-            } else if (args[i+1] == "off") {
-                DG::Timer::off();
-            } else {
-                print_help();
-                exit(0);
-            }
+            DG::Timer::on();
+            i++;
         } else {
             print_help();
             exit(0);
@@ -180,15 +206,23 @@ void parse_args(int argc, char* argv[], DG::Parameters& params)
 template<int N, int P>
 void run(const DG::Parameters& params)
 {
-    int coarsening = 0;
-    auto h = [dx = params.dx](const DG::Tuple<double,N>) { return DG::Tuple<double,N>(dx); };
+    auto h_uniform  = [dx = params.dx](const DG::Tuple<double,N>& x) {
+        return DG::Tuple<double,N>(dx);
+    };
+    auto h_adaptive = [dx = params.dx](const DG::Tuple<double,N>& x) {
+        double a = (x[0] > 0.5) ? dx : (x[0] > 0.25) ? 0.25*dx : 0.5*dx;
+        return DG::Tuple<double,N>(a);
+    };
+    auto h = [&](const DG::Tuple<double,N>& x) {
+        return params.adaptive ? h_adaptive(x) : h_uniform(x);
+    };
 
     DG::Timer::tic();
-    DG::Quadtree<N> qt(h, params.bctype == DG::kPeriodic);
+    DG::Quadtree<N> qt(h, params.coarsening, params.bctype == DG::kPeriodic);
     DG::Timer::toc("Build quadtree");
 
     DG::Timer::tic();
-    DG::Mesh<N,P> mesh(qt, coarsening);
+    DG::Mesh<N,P> mesh(qt);
     DG::Timer::toc("Build mesh");
 
     // Set up the test
@@ -222,10 +256,24 @@ void run(const DG::Parameters& params)
         u.vec().setRandom();
         u_true.reset(0);
         f.reset(0);
-        bcs = DG::BoundaryConditions<N,P>::Dirichlet(mesh);
+        switch (params.bctype) {
+            case DG::kDirichlet:
+                bcs = DG::BoundaryConditions<N,P>::Dirichlet(mesh);
+                break;
+            case DG::kNeumann:
+                bcs = DG::BoundaryConditions<N,P>::Neumann(mesh);
+                break;
+            case DG::kPeriodic:
+                bcs = DG::BoundaryConditions<N,P>::Periodic(mesh);
+                break;
+            default:
+                throw std::invalid_argument("Unknown boundary condition.");
+        }
     } else {
         throw std::invalid_argument("Unknown test type.");
     }
+
+    if (params.testtype == DG::kSolution) u_true.write("data/u_true.fun");
 
     // Discretize the Poisson problem
     DG::LDGPoisson<N,P> poisson(mesh, bcs, params.tau0, params.tauD);
@@ -265,15 +313,15 @@ void run(const DG::Parameters& params)
             DG::Vector r = mg.residual();
             double rnorm_old;
             std::cout << std::endl;
-            std::cout << std::setw(20) << std::left << "Cycle";
+            std::cout << std::setw(10) << std::left << "Cycle";
             std::cout << std::setw(20) << std::left << "Residual";
-            std::cout << std::setw(20) << std::left << "Convergence" << std::endl;
+            std::cout << std::setw(20) << std::left << "Convergence";
             std::cout << std::endl << std::endl;
             for (int i=0; i<params.ncycle; ++i) {
                 mg.vcycle();
                 rnorm_old = r.norm();
                 r = mg.residual();
-                std::cout << std::setw(20) << std::left << i;
+                std::cout << std::setw(10) << std::left << i;
                 std::cout << std::setw(20) << std::left << r.norm();
                 std::cout << std::setw(20) << std::left << r.norm()/rnorm_old;
                 std::cout << std::endl;
@@ -309,6 +357,7 @@ void run(const DG::Parameters& params)
 
 int main(int argc, char* argv[])
 {
+    DG::Timer::off();
     const int N = 2; // Dimension
     DG::Parameters params;
     parse_args(argc, argv, params);
