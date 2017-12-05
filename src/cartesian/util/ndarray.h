@@ -182,7 +182,7 @@ namespace DG
 
             int length_;
             Tuple<int,N> sizes_;
-            std::vector<int> data_;
+            std::vector<T> data_;
     };
 
     /*****************
