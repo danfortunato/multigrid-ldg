@@ -59,48 +59,56 @@ namespace DG
     /** Compile-time-sized tensor product matrix */
     template<int N, int P, int Q = P>
     using KronMat = Mat<ipow(P,N),ipow(Q,N)>;
+    /** Compile-time-sized simplex matrix */
     template<int N, int P, int Q = P>
-    using SimplexKronMat = Mat<ichoose(P+N-1,N),ichoose(Q+N-1,N)>;
+    using SimplexMat = Mat<ichoose(P+N-1,N),ichoose(Q+N-1,N)>;
 
     /** Compile-time-sized tensor product vector */
     template<int N, int P>
     using KronVec = Vec<ipow(P,N)>;
+    /** Compile-time-sized simplex vector */
     template<int N, int P>
-    using SimplexKronVec = Vec<ichoose(P+N-1,N)>;
+    using SimplexVec = Vec<ichoose(P+N-1,N)>;
 
     /** Compile-time-sized tensor product diagonal matrix */
     template<int N, int P>
     using KronDiag = Diag<ipow(P,N)>;
+    /** Compile-time-sized simplex diagonal matrix */
     template<int N, int P>
-    using SimplexKronDiag = Diag<ichoose(P+N-1,N)>;
+    using SimplexDiag = Diag<ichoose(P+N-1,N)>;
 
-    /** Compile-time-sized slicing matrix */
+    /** Compile-time-sized tensor product slicing matrix */
     template<int N, int P>
     using SliceMat = Mat<ipow(P,N-1),ipow(P,N)>;
+    /** Compile-time-sized simplex slicing matrix */
     template<int N, int P>
     using SimplexSliceMat = Mat<ichoose(P+N-2,N-1),ichoose(P+N-1,N)>;
 
-    /** Compile-time-sized evaluation matrix */
+    /** Compile-time-sized tensor product evaluation matrix */
     template<int N, int P, int Q>
     using EvalMat = KronMat<N,Q,P>;
+    /** Compile-time-sized simplex evaluation matrix */
     template<int N, int P, int Q>
-    using SimplexEvalMat = SimplexKronMat<N,Q,P>;
+    using SimplexEvalMat = SimplexMat<N,Q,P>;
 
-    /** Compile-time-sized slice evaluation matrix */
+    /** Compile-time-sized tensor product slice-evaluation matrix */
     template<int N, int P, int Q>
     using SliceEvalMat = Mat<ipow(Q,N-1),ipow(P,N)>;
+    /** Compile-time-sized simplex slice-evaluation matrix */
     template<int N, int P, int Q>
     using SimplexSliceEvalMat = Mat<ichoose(Q+N-2,N-1),ichoose(P+N-1,N)>;
 
-    /** Compile-time-sized element integration matrix */
+    /** Compile-time-sized tensor product element integration matrix */
     template<int N, int P, int Q>
     using ElemQuadMat = KronMat<N,P,Q>;
+    /** Compile-time-sized simplex element integration matrix */
     template<int N, int P, int Q>
-    using SimplexElemQuadMat = SimplexKronMat<N,P,Q>;
+    using SimplexElemQuadMat = SimplexMat<N,P,Q>;
 
-    /** Compile-time-sized face integration matrix */
+    /** Compile-time-sized tensor product face integration matrix */
     template<int N, int P, int Q>
     using FaceQuadMat = Mat<ipow(P,N),ipow(Q,N-1)>;
+    /** Compile-time-sized simplex face integration matrix */
     template<int N, int P, int Q>
     using SimplexFaceQuadMat = Mat<ichoose(P+N-1,N),ichoose(Q+N-2,N-1)>;
 
