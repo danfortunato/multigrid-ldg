@@ -269,7 +269,7 @@ namespace DG
             {
                 index_.fill(0);
                 index_[0] = P;
-                linearIndex_ = P*(P+1)/2;
+                linearIndex_ = ichoose(P+N-1,N);
             }
 
             bool operator==(const SimplexRangeIterator<N,P>& x) const
@@ -301,7 +301,7 @@ namespace DG
                     index_[s] = 0;
                 }
                 index_[0] = P;
-                linearIndex_ = P*(P+1)/2;
+                linearIndex_ = ichoose(P+N-1,N);
                 assert(index_.sum() <= P && index_.matrix().minCoeff() >= 0);
                 return *this;
             }
@@ -491,7 +491,7 @@ namespace DG
                 linearIndex_ = 0;
                 if (range.isEmpty()) {
                     index_[0] = max_;
-                    linearIndex_ = P_*(P_+1)/2;
+                    linearIndex_ = ichoose(P_+N-1,N);
                 }
             }
 
@@ -502,7 +502,7 @@ namespace DG
             {
                 index_.fill(min_);
                 index_[0] = max_;
-                linearIndex_ = P_*(P_+1)/2;
+                linearIndex_ =ichoose(P_+N-1,N);
             }
 
             bool operator==(const SimplexRangeIterator<N>& x) const
@@ -534,7 +534,7 @@ namespace DG
                     index_[s] = min_;
                 }
                 index_[0] = max_;
-                linearIndex_ = P_*(P_+1)/2;
+                linearIndex_ = ichoose(P_+N-1,N);
                 assert(index_.sum()-N*min_ <= P_ && index_.matrix().minCoeff() >= min_);
                 return *this;
             }
