@@ -46,26 +46,41 @@ TESTDIR   = tests
 SRCROOT   = src
 MODULES   = dg multigrid mesh util
 
-SRCDIR    = $(addprefix $(SRCROOT)/,$(MODULES))
-BUILDDIR  = $(addprefix $(BUILDROOT)/,$(MODULES))
-INCDIR   += $(addprefix -I,$(SRCDIR))
+SRCDIR-cartesian   = $(addprefix $(SRCROOT)/cartesian/,$(MODULES))
+BUILDDIR-cartesian = $(addprefix $(BUILDROOT)/cartesian/,$(MODULES))
+INCDIR-cartesian   = $(INCDIR) $(addprefix -I,$(SRCDIR-cartesian))
+BINDIR-cartesian   = $(BINDIR)/cartesian
 
-VPATH = %.cpp $(SRCDIR)
+SRCDIR-unstructured   = $(addprefix $(SRCROOT)/unstructured/,$(MODULES))
+BUILDDIR-unstructured = $(addprefix $(BUILDROOT)/unstructured/,$(MODULES))
+INCDIR-unstructured   = $(INCDIR) $(addprefix -I,$(SRCDIR-unstructured))
+BINDIR-unstructured   = $(BINDIR)/unstructured
 
-SRC  = $(foreach sdir,$(SRCDIR), $(wildcard $(sdir)/*.cpp))
-OBJ  = $(patsubst $(SRCROOT)/%.cpp,build/%.o,$(SRC))
+SRC-cartesian  = $(foreach sdir,$(SRCDIR-cartesian), $(wildcard $(sdir)/*.cpp))
+OBJ-cartesian  = $(patsubst $(SRCROOT)/%.cpp,$(BUILDROOT)/%.o,$(SRC-cartesian))
+SRC-unstructured  = $(foreach sdir,$(SRCDIR-unstructured), $(wildcard $(sdir)/*.cpp))
+OBJ-unstructured  = $(patsubst $(SRCROOT)/%.cpp,$(BUILDROOT)/%.o,$(SRC-unstructured))
 
 headers = common.h sparseblockmatrix.h element.h master.h mesh.h quadtree.h function.h ldgpoisson.h
-EXECS  = matrix_tests dg_tests
+EXECS  = cartesian/matrix_tests cartesian/dg_tests unstructured/dg_tests
 EXECS := $(addprefix $(BINDIR)/,$(EXECS))
 
-define cc-command
-	$(CXX) $(CFLAGS) $(INCDIR) -o $@ $< $(LIBDIR) $(LIB)
+define cc-command-cartesian
+	$(CXX) $(CFLAGS) $(INCDIR-cartesian) -o $@ $< $(LIBDIR) $(LIB)
 endef
 
-define make-goal
+define cc-command-unstructured
+	$(CXX) $(CFLAGS) $(INCDIR-unstructured) -o $@ $< $(LIBDIR) $(LIB)
+endef
+
+define make-goal-cartesian
 $1/%.o: %.cpp
-    $(CXX) $(CFLAGS) $(INCDIR) -c $$< -o $$@ $(LIBDIR) $(LIB)
+    $(CXX) $(CFLAGS) $(INCDIR-cartesian) -c $$< -o $$@ $(LIBDIR) $(LIB)
+endef
+
+define make-goal-unstructured
+$1/%.o: %.cpp
+    $(CXX) $(CFLAGS) $(INCDIR-unstructured) -c $$< -o $$@ $(LIBDIR) $(LIB)
 endef
 
 all: checkdirs $(MAKE) executables
@@ -77,25 +92,34 @@ executables: $(EXECS)
 #
 #include Makefile.dep
 
-$(BINDIR)/matrix_tests: $(TESTDIR)/matrix_tests.cpp $(OBJ)
-	$(cc-command)
+$(BINDIR)/cartesian/matrix_tests: $(TESTDIR)/cartesian/matrix_tests.cpp $(OBJ-cartesian)
+	$(cc-command-cartesian)
 
-$(BINDIR)/dg_tests: $(TESTDIR)/dg_tests.cpp $(OBJ)
-	$(cc-command)
+$(BINDIR)/cartesian/dg_tests: $(TESTDIR)/cartesian/dg_tests.cpp $(OBJ-cartesian)
+	$(cc-command-cartesian)
 
-checkdirs: $(BINDIR) $(BUILDDIR)
+$(BINDIR)/unstructured/dg_tests: $(TESTDIR)/unstructured/dg_tests.cpp $(OBJ-unstructured)
+	$(cc-command-unstructured)
 
-$(BINDIR):
+checkdirs: $(BINDIR-cartesian) $(BINDIR-unstructured) $(BUILDDIR-cartesian) $(BUILDDIR-unstructured)
+
+$(BINDIR-cartesian):
 	@mkdir -p $@
 
-$(BUILDDIR):
+$(BINDIR-unstructured):
+	@mkdir -p $@
+
+$(BUILDDIR-cartesian):
+	@mkdir -p $@
+
+$(BUILDDIR-unstructured):
 	@mkdir -p $@
 
 clean:
 	rm -rf $(BUILDROOT)
 	rm -rf $(BINDIR)
 
-#.PHONY: clean all executables depend
 .PHONY: clean all checkdirs executables depend
 
-	$(foreach bdir,$(BUILDDIR),$(eval $(call make-goal,$(bdir))))
+	$(foreach bdir,$(BUILDDIR-cartesian),$(eval $(call make-goal-cartesian,$(bdir))))
+	$(foreach bdir,$(BUILDDIR-unstructured),$(eval $(call make-goal-unstructured,$(bdir))))

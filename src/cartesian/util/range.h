@@ -140,7 +140,7 @@ namespace DG
             RangeIterator<N,P> operator++(int)
             {
                 RangeIterator<N,P> tmp = *this;
-                ++(*this); 
+                ++(*this);
                 return tmp;
             }
 
