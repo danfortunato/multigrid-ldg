@@ -19,13 +19,13 @@ fprintf(file, '%i %i\n\n', size(p,1), size(t,1));
 % Write p
 format = repmat('%f ',1,N);
 format = strcat(format(1:end-1),'\n');
-fprintf(file, format, p);
+fprintf(file, format, p');
 fprintf(file, '\n');
 
 % Write t
 format = repmat('%i ',1,N+1);
 format = strcat(format(1:end-1),'\n');
-fprintf(file, format, t);
+fprintf(file, format, t');
 fclose(file);
 
 end
