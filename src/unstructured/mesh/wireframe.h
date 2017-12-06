@@ -2,11 +2,51 @@
 #define WIREFRAME_H
 
 #include <vector>
+#include <array>
 #include <fstream>
 #include <sstream>
 
 namespace DG
 {
+    /** @brief An n-dimensional simplex */
+    template<int N>
+    struct Simplex
+    {
+        /** @brief Construct a unit simplex */
+        Simplex()
+        {
+            p[0] = Tuple<double,N>::Zero();
+            for (int i=0; i<N; ++i) {
+                p[i+1] = Tuple<double,N>::Zero();
+                p[i+1][i] = 1;
+            }
+        }
+
+        /** @brief Construct a simplex from the given points */
+        Simplex(const std::array<Tuple<double,N>,N+1>& p_) :
+            p(p_)
+        {}
+
+        /** @brief The Jacobian matrix */
+        Mat<N> jacobian_mat() const
+        {
+            Mat<N> J;
+            for (int i=0; i<N; ++i) {
+                J.col(i) = p[i+1]-p[0];
+            }
+            return J;
+        }
+
+        /** @brief The Jacobian determinant */
+        double jacobian_det() const
+        {
+            return jacobian_mat().determinant();
+        }
+
+        /** @brief The points defining the simplex */
+        std::array<Tuple<double,N>,N+1> p;
+    };
+
     /** @brief A wireframe for an unstructured mesh */
     template<int N>
     struct Wireframe
@@ -58,7 +98,7 @@ namespace DG
                     int i=0;
                     while (ss >> val) tri[i++] = val;
                     assert(i == N+1);
-                    t.push_back(tri);
+                    t.push_back(tri-1); // Shift 1-index to 0-index
                 }
 
                 ifs.close();

@@ -3,6 +3,7 @@
 #include "range.h"
 #include "ndarray.h"
 #include "wireframe.h"
+#include "master.h"
 
 int main(int argc, char* argv[])
 {
@@ -10,23 +11,25 @@ int main(int argc, char* argv[])
     const int p = 3;   // Polynomial order
     const int P = p+1; // Number of nodes per dimension
 
-    DG::SimplexArray<DG::Tuple<double,N>,N,P> nodes;
-    for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-        *it = it.index().reverse().cast<double>()/(P-1);
-        std::cout << (*it).format(DG::TupleFormat) << std::endl;
-    }
-    std::cout << std::endl;
-
-    DG::Wireframe<2> wireframe("data/circle.mesh");
+    DG::Wireframe<N> wireframe("data/ball.mesh");
     std::cout << wireframe.np << " " << wireframe.nt << std::endl << std::endl;
 
-    for (int i=0; i<wireframe.np; ++i) {
-        std::cout << wireframe.p[i].format(DG::TupleFormat) << std::endl;
-    }
-    std::cout << std::endl;
-
     for (int i=0; i<wireframe.nt; ++i) {
-        std::cout << wireframe.t[i].format(DG::TupleFormat) << std::endl;
+        DG::Tuple<int,N+1> ti = wireframe.t[i];
+        std::array<DG::Tuple<double,N>,N+1> p;
+        for (int j=0; j<N+1; ++j) {
+            p[j] = wireframe.p[ti[j]];
+        }
+        DG::Simplex<N> simplex(p);
+        std::cout << "Simplex " << i << ": ";
+        for (int j=0; j<N+1; ++j) {
+            std::cout << simplex.p[j].format(DG::TupleFormat) << " ";
+        }
+        std::cout << std::endl;
+        for (DG::SimplexRangeIterator<N,P> it; it != DG::SimplexRange<N,P>::end(); ++it) {
+            std::cout << DG::Master<N,P>::dgnodes(it.linearIndex(), simplex).format(DG::TupleFormat) << std::endl;
+        }
+        std::cout << std::endl;
     }
 
     return 0;
