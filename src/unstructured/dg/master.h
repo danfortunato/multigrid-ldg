@@ -10,20 +10,6 @@
 
 namespace DG
 {
-    /** @brief Equispaced nodes on a simplex */
-    template<int N, int P>
-    struct SimplexNodes
-    {
-        SimplexNodes()
-        {
-            for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-                *it = it.index().reverse().template cast<double>() / (P-1);
-            }
-        }
-        /** Nodal points */
-        SimplexArray<Tuple<double,N>,N,P> nodes;
-    };
-
     /** @brief The master simplex */
     template<int N, int P>
     struct Master
@@ -33,18 +19,29 @@ namespace DG
         /** Number of nodes per element */
         static const int npl = ichoose(P+N-1,N);
         /** The local DG nodes */
-        static const SimplexNodes<N,P> plocal;
+        static const SimplexArray<Tuple<double,N>,N,P> nodes;
         /** The linearIndex-th node in a given simplex */
         static Tuple<double,N> dgnodes(double linearIndex, const Simplex<N>& simplex = Simplex<N>())
         {
             assert(0 <= linearIndex && linearIndex < npl);
-            Tuple<double,N> local = plocal.nodes(linearIndex);
+            Tuple<double,N> local = nodes(linearIndex);
             return simplex.p[0].matrix() + simplex.jacobian_mat()*local.matrix();
         }
     };
 
+    /** @brief Equispaced nodes on a simplex */
     template<int N, int P>
-    const SimplexNodes<N,P> Master<N,P>::plocal;
+    SimplexArray<Tuple<double,N>,N,P> simplexNodes()
+    {
+        SimplexArray<Tuple<double,N>,N,P> nodes;
+        for (auto it = nodes.begin(); it != nodes.end(); ++it) {
+            *it = it.index().reverse().template cast<double>() / (P-1);
+        }
+        return nodes;
+    }
+
+    template<int N, int P>
+    const SimplexArray<Tuple<double,N>,N,P> Master<N,P>::nodes = simplexNodes<N,P>();
 }
 
 #endif
