@@ -135,7 +135,7 @@ namespace DG
         Mesh() = delete;
 
         /** @brief Construct a mesh from a wireframe */
-        Mesh(const Wireframe<N>& wireframe)
+        Mesh(const Wireframe<N>& wireframe, const std::vector<std::function<bool(Tuple<double,N>)>>& bndfuns = {})
         {
             Timer::tic();
             // Construct the elements
@@ -216,6 +216,21 @@ namespace DG
                 }
                 Vec<N> inward = wireframe.p[a] - p[0];
                 if (normal.dot(inward) > 0) normal *= -1;
+
+                // Add the boundary indicator
+                if (!bndfuns.empty() && right < 0) {
+                    bool found = false;
+                    int ind = 1;
+                    for (const auto& bnd : bndfuns) {
+                        if (std::all_of(fsimplex.p.begin(), fsimplex.p.end(), bnd)) {
+                            found = true;
+                            break;
+                        }
+                        ind++;
+                    }
+                    if (!found) throw std::invalid_argument("Boundary face does not satisfy any boundary function.");
+                    right = -ind;
+                }
 
                 // Add the face
                 Face<N,P> face(*this, left, right, normal, fsimplex);

@@ -13,7 +13,8 @@ int main(int argc, char* argv[])
     DG::Wireframe<N> wireframe("data/ball.mesh");
     std::cout << "Points = " << wireframe.np << ", Triangles = " << wireframe.nt << std::endl;
 
-    DG::Mesh<N,P> mesh(wireframe);
+    auto bnd1 = [] (DG::Tuple<double,N> p) { return std::sqrt(p.square().sum())>1-1e-3; };
+    DG::Mesh<N,P> mesh(wireframe, {bnd1});
 
     double vol=0, area=0;
     for (int i=0; i<mesh.ne; ++i) {
