@@ -28,6 +28,13 @@ namespace DG
         return (k==0 || k==n) ? 1 : (ichoose(n-1,k-1) + ichoose(n-1,k));
     }
 
+    /** @brief Compile-time factorial function */
+    template<typename T>
+    inline constexpr T ifac(const T n)
+    {
+        return (n==0) ? 1 : n*ifac(n-1);
+    }
+
     /** The storage order to use */
     constexpr auto StorageOrder = Eigen::RowMajor;
     // Eigen disallows row-major column vectors

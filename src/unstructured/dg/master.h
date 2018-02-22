@@ -148,7 +148,7 @@ namespace DG
         }
 
         // Normalize
-        v *= std::pow(2.0,ichoose(N,2)/2.0);
+        v *= std::pow(2.0,ichoose(N,2)/2.0+1);
 
         return v;
     }
@@ -220,7 +220,7 @@ namespace DG
         }
 
         // Normalize
-        dv *= std::pow(2.0,ichoose(N,2)/2.0);
+        dv *= std::pow(2.0,ichoose(N,2)/2.0+1);
 
         return dv;
     }
