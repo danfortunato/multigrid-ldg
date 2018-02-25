@@ -72,11 +72,13 @@ namespace DG
                 if (active && depth == 0) print();
             }
 
+            /** @brief Activate the timer */
             static void on()
             {
                 active = true;
             }
 
+            /** @brief Deactivate the timer */
             static void off()
             {
                 active = false;
