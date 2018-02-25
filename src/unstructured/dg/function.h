@@ -165,7 +165,7 @@ namespace DG
                 for (int elem = 0; elem < mesh->ne; ++elem) {
                     for (SimplexRangeIterator<N,P> it; it != SimplexRange<N,P>::end(); ++it) {
                         for (int i=0; i<N; ++i) {
-                            ofs << mesh->elements[elem].dgnodes(it.index())[i] << " ";
+                            ofs << mesh->elements[elem].dgnodes(it.linearIndex())[i] << " ";
                         }
                         ofs << coeffs[elem](it.linearIndex()) << std::endl;
                     }
