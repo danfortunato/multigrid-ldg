@@ -46,12 +46,12 @@ namespace DG
                 return data_[flatten(index)];
             }
 
-            static int size()
+            static constexpr int size()
             {
                 return ipow(P,N);
             }
 
-            static int size(int)
+            static constexpr int size(int)
             {
                 return P;
             }

@@ -52,12 +52,12 @@ namespace DG
                 return data_[flatten(index)];
             }
 
-            static int size()
+            static constexpr int size()
             {
                 return ipow(P,N);
             }
 
-            static int size(int)
+            static constexpr int size(int)
             {
                 return P;
             }
@@ -121,12 +121,12 @@ namespace DG
                 return data_[linearIndex];
             }
 
-            static int size()
+            static constexpr int size()
             {
                 return ichoose(P+N-1,N);
             }
 
-            static int size(int)
+            static constexpr int size(int)
             {
                 return P;
             }
