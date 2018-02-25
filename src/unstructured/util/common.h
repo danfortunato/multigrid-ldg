@@ -11,6 +11,9 @@
 
 namespace DG
 {
+    template<int N, int P>
+    struct Quadrature;
+
     /** @brief The number of quadrature points to use */
     static const int Q = 10;
 
@@ -96,28 +99,28 @@ namespace DG
     using EvalMat = KronMat<N,Q,P>;
     /** Compile-time-sized simplex evaluation matrix */
     template<int N, int P, int Q>
-    using SimplexEvalMat = SimplexMat<N,Q,P>;
+    using SimplexEvalMat = Mat<Quadrature<N,Q>::size,ichoose(P+N-1,N)>;
 
     /** Compile-time-sized tensor product slice-evaluation matrix */
     template<int N, int P, int Q>
     using SliceEvalMat = Mat<ipow(Q,N-1),ipow(P,N)>;
     /** Compile-time-sized simplex slice-evaluation matrix */
     template<int N, int P, int Q>
-    using SimplexSliceEvalMat = Mat<ichoose(Q+N-2,N-1),ichoose(P+N-1,N)>;
+    using SimplexSliceEvalMat = Mat<Quadrature<N-1,Q>::size,ichoose(P+N-1,N)>;
 
     /** Compile-time-sized tensor product element integration matrix */
     template<int N, int P, int Q>
     using ElemQuadMat = KronMat<N,P,Q>;
     /** Compile-time-sized simplex element integration matrix */
     template<int N, int P, int Q>
-    using SimplexElemQuadMat = SimplexMat<N,P,Q>;
+    using SimplexElemQuadMat = Mat<ichoose(P+N-1,N),Quadrature<N,Q>::size>;
 
     /** Compile-time-sized tensor product face integration matrix */
     template<int N, int P, int Q>
     using FaceQuadMat = Mat<ipow(P,N),ipow(Q,N-1)>;
     /** Compile-time-sized simplex face integration matrix */
     template<int N, int P, int Q>
-    using SimplexFaceQuadMat = Mat<ichoose(P+N-1,N),ichoose(Q+N-2,N-1)>;
+    using SimplexFaceQuadMat = Mat<ichoose(P+N-1,N),Quadrature<N-1,Q>::size>;
 
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>
