@@ -65,19 +65,19 @@ namespace DG
     }
 
     /** @brief Compute the normalized Jacobi polynomials */
-    template<int N, int P>
-    SimplexVec<N,P> jacobi(int n, int a, int b, const SimplexVec<N,P>& x)
+    template<int Q>
+    Vec<Q> jacobi(int n, int a, int b, const Vec<Q>& x)
     {
         double a1  = a+1;
         double b1  = b+1;
         double ab  = a+b;
         double ab1 = a+b+1;
 
-        Eigen::Matrix<double,ichoose(P+N-1,N),Eigen::Dynamic> PL(ichoose(P+N-1,N), n+1);
+        Eigen::Matrix<double,Q,Eigen::Dynamic> PL(Q, n+1);
 
         // Initial values P_0(x) and P_1(x)
         double gamma0 = std::pow(2.0,ab1)/ab1*std::tgamma(a1)*std::tgamma(b1)/std::tgamma(ab1);
-        SimplexVec<N,P> next = SimplexVec<N,P>::Constant(1.0/std::sqrt(gamma0));
+        Vec<Q> next = Vec<Q>::Constant(1.0/std::sqrt(gamma0));
         if (n == 0) {
             return next;
         } else {
@@ -108,29 +108,29 @@ namespace DG
     }
 
     /** @brief Compute the derivative of the normalized Jacobi polynomials */
-    template<int N, int P>
-    SimplexVec<N,P> djacobi(int n, int a, int b, const SimplexVec<N,P>& x)
+    template<int Q>
+    Vec<Q> djacobi(int n, int a, int b, const Vec<Q>& x)
     {
         if (n == 0) {
-            return SimplexVec<N,P>::Zero();
+            return Vec<Q>::Zero();
         } else {
-            return std::sqrt(n*(n+a+b+1)) * jacobi<N,P>(n-1, a+1, b+1, x);
+            return std::sqrt(n*(n+a+b+1)) * jacobi(n-1, a+1, b+1, x);
         }
     }
 
     /** @brief Evaluate the porder-th Koornwinder polynomial at the given nodes */
-    template<int N, int P>
-    SimplexVec<N,P> koornwinder(const SimplexArray<Tuple<double,N>,N,P>& nodes, const Tuple<int,N>& porder)
+    template<int N, int Q>
+    Vec<Q> koornwinder(const std::array<Tuple<double,N>,Q>& nodes, const Tuple<int,N>& porder)
     {
         // Map nodes from [0,1] to [-1,1]
-        Eigen::Matrix<double,ichoose(P+N-1,N),N> X;
-        for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-            X.row(it.linearIndex()) = 2*(*it)-1;
+        Mat<Q,N> X;
+        for (int i=0; i<(int)nodes.size(); ++i) {
+            X.row(i) = 2*nodes[i]-1;
         }
 
         // Map (x,y,z,...) to (a,b,c,...) coordinates
-        Eigen::Matrix<double,ichoose(P+N-1,N),N> A;
-        SimplexVec<N,P> denom;
+        Mat<Q,N> A;
+        Vec<Q> denom;
         for (int i=0; i<N-1; ++i) {
             denom.setConstant(3-N+i);
             for (int j=i+1; j<N; ++j) {
@@ -143,12 +143,12 @@ namespace DG
         A.col(N-1) = X.col(N-1);
 
         // Compute the product of the Jacobi polynomials
-        SimplexVec<N,P> v = SimplexVec<N,P>::Ones();
+        Vec<Q> v = Vec<Q>::Ones();
         int poly  = 0;
         int power = 0;
         for (int i=0; i<N; ++i) {
-            SimplexVec<N,P> a = A.col(i);
-            v = v.cwiseProduct(jacobi<N,P>(porder[i], poly, 0, a));
+            Vec<Q> a = A.col(i);
+            v = v.cwiseProduct(jacobi(porder[i], poly, 0, a));
             v = v.cwiseProduct(((1-a.array()).pow(power)).matrix());
             poly  += 2*porder[i]+1;
             power += porder[i];
@@ -160,20 +160,28 @@ namespace DG
         return v;
     }
 
+    /** @brief Evaluate the porder-th Koornwinder polynomial at the given nodes */
+    template<int N, int P>
+    SimplexVec<N,P> koornwinder(const SimplexArray<Tuple<double,N>,N,P>& nodes, const Tuple<int,N>& porder)
+    {
+        std::array<Tuple<double,N>,nodes.size()>* x = reinterpret_cast<std::array<Tuple<double,N>,nodes.size()>*>(const_cast<Tuple<double,N>*>(nodes.data()));
+        return koornwinder<N,nodes.size()>(*x, porder);
+    }
+
     /** @brief Evaluate the derivative of the porder-th Koornwinder polynomial
      *         in the dim-th dimension at the given nodes */
-    template<int N, int P>
-    SimplexVec<N,P> dkoornwinder(const SimplexArray<Tuple<double,N>,N,P>& nodes, const Tuple<int,N>& porder, int dim)
+    template<int N, int Q>
+    Vec<Q> dkoornwinder(const std::array<Tuple<double,N>,Q>& nodes, const Tuple<int,N>& porder, int dim)
     {
         // Map nodes from [0,1] to [-1,1]
-        Eigen::Matrix<double,ichoose(P+N-1,N),N> X;
-        for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-            X.row(it.linearIndex()) = 2*(*it)-1;
+        Mat<Q,N> X;
+        for (int i=0; i<(int)nodes.size(); ++i) {
+            X.row(i) = 2*nodes[i]-1;
         }
 
         // Map (x,y,z,...) to (a,b,c,...) coordinates
-        Eigen::Matrix<double,ichoose(P+N-1,N),N> A;
-        SimplexVec<N,P> denom;
+        Mat<Q,N> A;
+        Vec<Q> denom;
         for (int i=0; i<N-1; ++i) {
             denom.setConstant(3-N+i);
             for (int j=i+1; j<N; ++j) {
@@ -186,24 +194,24 @@ namespace DG
         A.col(N-1) = X.col(N-1);
 
         // Compute the derivative using the chain rule
-        SimplexVec<N,P> dv = SimplexVec<N,P>::Zero();
+        Vec<Q> dv = Vec<Q>::Zero();
         for (int d=0; d<dim+1; ++d) {
 
             // Compute d(a_d)/d(x_dim)
-            SimplexVec<N,P> chain = SimplexVec<N,P>::Ones();
+            Vec<Q> chain = Vec<Q>::Ones();
             if (d != dim) chain = 0.5*(1+A.col(d).array());
             int divide = 0;
             for (int i=d+1; i<N; ++i) divide|=1<<i;
 
             // Compute  d/d(a_d)
-            SimplexVec<N,P> da  = SimplexVec<N,P>::Zero();
-            SimplexVec<N,P> fac = SimplexVec<N,P>::Ones();
+            Vec<Q> da  = Vec<Q>::Zero();
+            Vec<Q> fac = Vec<Q>::Ones();
             int poly  = 0;
             int power = 0;
             for (int i=0; i<N; ++i) {
-                SimplexVec<N,P> a = A.col(i);
+                Vec<Q> a = A.col(i);
                 if (i != d) {
-                    fac = fac.cwiseProduct(jacobi<N,P>(porder[i], poly, 0, a));
+                    fac = fac.cwiseProduct(jacobi(porder[i], poly, 0, a));
                     if (power>0) {
                         if (divide&(1<<i)) {
                             fac = 2*fac.cwiseProduct(((1-a.array()).pow(power-1)).matrix());
@@ -212,10 +220,10 @@ namespace DG
                         }
                     }
                 } else {
-                    da = djacobi<N,P>(porder[i], poly, 0, a);
+                    da = djacobi(porder[i], poly, 0, a);
                     if (power>0) {
                         da = da.cwiseProduct(((1-a.array()).pow(power)).matrix());
-                        da -= jacobi<N,P>(porder[i], poly, 0, a).cwiseProduct(power*((1-a.array()).pow(power-1)).matrix());
+                        da -= jacobi(porder[i], poly, 0, a).cwiseProduct(power*((1-a.array()).pow(power-1)).matrix());
                     }
                 }
                 poly  += 2*porder[i]+1;
@@ -230,6 +238,15 @@ namespace DG
         dv *= std::pow(2.0,ichoose(N,2)/2.0+1);
 
         return dv;
+    }
+
+    /** @brief Evaluate the derivative of the porder-th Koornwinder polynomial
+     *         in the dim-th dimension at the given nodes */
+    template<int N, int P>
+    SimplexVec<N,P> dkoornwinder(const SimplexArray<Tuple<double,N>,N,P>& nodes, const Tuple<int,N>& porder, int dim)
+    {
+        std::array<Tuple<double,N>,nodes.size()>* x = reinterpret_cast<std::array<Tuple<double,N>,nodes.size()>*>(const_cast<Tuple<double,N>*>(nodes.data()));
+        return dkoornwinder<N,nodes.size()>(*x, porder, dim);
     }
 
     /** @brief The Vandermonde matrix on the unit simplex */
