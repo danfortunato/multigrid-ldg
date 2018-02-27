@@ -70,8 +70,8 @@ namespace DG
     template<int N, int P>
     struct Element
     {
-        Element(int id_, Simplex<N> simplex_) :
-            id(id_),
+        Element(int lid_, Simplex<N> simplex_) :
+            lid(lid_),
             simplex(simplex_)
         {}
 
@@ -101,8 +101,8 @@ namespace DG
             return Master<N,P>::dgnodes(linearIndex, simplex);
         }
 
-        /** The global ID of the element */
-        int id;
+        /** The local ID of the element */
+        int lid;
         /** The geometry of the element */
         Simplex<N> simplex;
     };
