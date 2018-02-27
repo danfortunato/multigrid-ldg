@@ -18,7 +18,7 @@ endif
 
 # Type of build
 ifeq ($(BUILD),debug)
-	CFLAGS += -g -Og -DDEBUG
+	CFLAGS += -g -O0 -DDEBUG
 else ifeq ($(BUILD),release)
 	CFLAGS += -O3 -DNDEBUG
 endif
