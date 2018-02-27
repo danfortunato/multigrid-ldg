@@ -291,6 +291,39 @@ namespace DG
             nf = faces.size();
         }
 
+        /** @brief Compute the lifting matrices for a given face
+         *
+         *  @param[in]  f  : The face to lift from
+         *  @param[out] L  : Test from the left
+         *  @param[out] R  : Test from the right
+         *  @param[out] LL : Test from the left, trial from the left
+         *  @param[out] RR : Test from the right, trial from the right
+         *  @param[out] RL : Test from the right, trial from the left
+         */
+        void lift(const Face<N,P>& f, SimplexFaceQuadMat<N,P,Q>* L, SimplexFaceQuadMat<N,P,Q>* R, SimplexMat<N,P>* LL, SimplexMat<N,P>* RR, SimplexMat<N,P>* RL) const
+        {
+            // Can we use the precomputed mass matrix?
+            if (f.interiorQ()) {
+                if (LL) *LL = f.slice_l.transpose() * f.mass() * f.slice_l;
+                if (RR) *RR = f.slice_r.transpose() * f.mass() * f.slice_r;
+                if (RL) *RL = f.slice_r.transpose() * f.mass() * f.slice_l;
+            } else {
+                // Compute matrices to evaluate at quadrature points
+                SimplexSliceEvalMat<N,P,Q> phi_l;
+                for (SimplexRangeIterator<N,P> it; it != SimplexRange<N,P>::end(); ++it) {
+                    phi_l.col(it.linearIndex()) = koornwinder<N,Quadrature<N-1,Q>::size>(f.xl, it.index());
+                }
+                phi_l *= Master<N,P>::invvandermonde;
+
+                // Scale the quadrature weights according to the area of the face
+                Vec<Quadrature<N-1,Q>::size> w(Quadrature<N-1,Q>::weights.data());
+                w *= f.area();
+
+                if (L) *L = phi_l.transpose() * w.asDiagonal();
+                if (LL) *LL = (L ? *L : phi_l.transpose() * w.asDiagonal()) * phi_l;
+            }
+        }
+
         /** @brief The polynomial order */
         static const int p = P-1;
         /** @brief The number of nodes per element */
