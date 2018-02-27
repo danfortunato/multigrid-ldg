@@ -23,10 +23,14 @@ namespace DG
         static const SimplexArray<Tuple<double,N>,N,P> nodes;
         /** Vandermonde matrix */
         static const SimplexMat<N,P> vandermonde;
+        /** Inverse Vandermonde matrix */
+        static const SimplexMat<N,P> invvandermonde;
         /** Differentiation Vandermonde matrices */
         static const std::array<SimplexMat<N,P>,N> dvandermonde;
         /** Mass matrix */
         static const SimplexMat<N,P> mass;
+        /** Inverse mass matrix */
+        static const SimplexMat<N,P> invmass;
         /** Differentiation matrices */
         static const std::array<SimplexMat<N,P>,N> diff;
         /** The linearIndex-th node in a given simplex */
@@ -303,9 +307,13 @@ namespace DG
     template<int N, int P>
     const SimplexMat<N,P> Master<N,P>::vandermonde = simplexVandermonde<N,P>();
     template<int N, int P>
+    const SimplexMat<N,P> Master<N,P>::invvandermonde = simplexVandermonde<N,P>().inverse();
+    template<int N, int P>
     const std::array<SimplexMat<N,P>,N> Master<N,P>::dvandermonde = simplexDVandermonde<N,P>();
     template<int N, int P>
     const SimplexMat<N,P> Master<N,P>::mass = simplexMass<N,P>();
+    template<int N, int P>
+    const SimplexMat<N,P> Master<N,P>::invmass = simplexMass<N,P>().inverse();
     template<int N, int P>
     const std::array<SimplexMat<N,P>,N> Master<N,P>::diff = simplexDiff<N,P>();
 
