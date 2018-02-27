@@ -95,10 +95,10 @@ namespace DG
             return Master<N,P>::invmass * jac;
         }
 
-        /** The index-th node in the element */
-        Tuple<double,N> dgnodes(const Tuple<int,N>& index) const
+        /** The linearIndex-th node in the element */
+        Tuple<double,N> dgnodes(const int linearIndex) const
         {
-            return Master<N,P>::dgnodes(index, simplex);
+            return Master<N,P>::dgnodes(linearIndex, simplex);
         }
 
         /** The global ID of the element */
