@@ -28,7 +28,7 @@ namespace DG
     template<typename T>
     inline constexpr T ichoose(const T n, const T k)
     {
-        return (k==0 || k==n) ? 1 : (ichoose(n-1,k-1) + ichoose(n-1,k));
+        return (n < k) ? 0 : (k==0 || k==n) ? 1 : (ichoose(n-1,k-1) + ichoose(n-1,k));
     }
 
     /** @brief Compile-time factorial function */
