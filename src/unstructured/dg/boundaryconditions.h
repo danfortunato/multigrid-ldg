@@ -37,8 +37,8 @@ namespace DG
         BoundaryConditions(const Mesh<N,P>& mesh_, BoundaryCondition<N,P> bc) :
             mesh(&mesh_)
         {
-            for (int bnd : mesh->boundaryIndices) {
-                bcmap.emplace(bnd, bc);
+            for (int bnd=0; bnd<mesh->ngb; ++bnd) {
+                bcmap.emplace(bnd+1, bc);
             }
         }
 

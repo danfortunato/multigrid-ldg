@@ -53,7 +53,7 @@ namespace DG
 
         int boundary() const
         {
-            return boundaryQ() ? right : 0;
+            return boundaryQ() ? -right : 0;
         }
 
         /** Index of element on the "left"  (anti-normal direction) */
@@ -172,6 +172,7 @@ namespace DG
             }
 
             nb = 0;
+            ngb = bndfuns.size();
             for (auto it = f2t.begin(); it != f2t.end(); ++it) {
                 // Get the left and right simplices
                 int id1 = it->second[0];
@@ -252,6 +253,8 @@ namespace DG
         int ne;
         /** @brief The number of boundary faces */
         int nb;
+        /** @brief The number of geometric boundaries */
+        int ngb;
         /** @brief An enumeration of the elements in the mesh */
         std::vector<Element<N,P>> elements;
         /** @brief An enumeration of the faces in the mesh */
