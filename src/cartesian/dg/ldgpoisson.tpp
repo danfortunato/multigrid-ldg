@@ -73,7 +73,7 @@ namespace DG
             mesh->lift(f, nullptr, nullptr, &LL, &RR, &RL);
 
             // Since the normals are the coordinate vectors, the only nonzero
-            // component of the normal dot product is the in dimension this face
+            // component of the normal dot product is in the dimension this face
             // lives on
             double n = f.normal[f.dim];
 
