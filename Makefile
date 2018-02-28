@@ -62,7 +62,7 @@ SRC-unstructured  = $(foreach sdir,$(SRCDIR-unstructured), $(wildcard $(sdir)/*.
 OBJ-unstructured  = $(patsubst $(SRCROOT)/%.cpp,$(BUILDROOT)/%.o,$(SRC-unstructured))
 
 headers = common.h sparseblockmatrix.h element.h master.h mesh.h quadtree.h function.h ldgpoisson.h
-EXECS  = cartesian/matrix_tests cartesian/dg_tests unstructured/dg_tests
+EXECS  = cartesian/matrix_tests cartesian/dg_tests unstructured/dg_tests unstructured/l2_projection_test
 EXECS := $(addprefix $(BINDIR)/,$(EXECS))
 
 define cc-command-cartesian
@@ -99,6 +99,12 @@ $(BINDIR)/cartesian/dg_tests: $(TESTDIR)/cartesian/dg_tests.cpp $(OBJ-cartesian)
 	$(cc-command-cartesian)
 
 $(BINDIR)/unstructured/dg_tests: $(TESTDIR)/unstructured/dg_tests.cpp $(OBJ-unstructured)
+	$(cc-command-unstructured)
+
+$(BINDIR)/unstructured/basis_tests: $(TESTDIR)/unstructured/basis_tests.cpp $(OBJ-unstructured)
+	$(cc-command-unstructured)
+
+$(BINDIR)/unstructured/l2_projection_test: $(TESTDIR)/unstructured/l2_projection_test.cpp $(OBJ-unstructured)
 	$(cc-command-unstructured)
 
 checkdirs: $(BINDIR-cartesian) $(BINDIR-unstructured) $(BUILDDIR-cartesian) $(BUILDDIR-unstructured)

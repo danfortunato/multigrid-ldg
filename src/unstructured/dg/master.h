@@ -42,6 +42,13 @@ namespace DG
         }
     };
 
+    template<int N, int P, int Q>
+    struct Phi
+    {
+        /** @brief Basis functions evaluated at quadrature points */
+        static const SimplexElemQuadMat<N,P,Q> phi;
+    };
+
     /** Hack to initialize the number of quadrature points */
     template<int N, int P>
     constexpr int quadratureSize() { return 0; }
@@ -59,13 +66,20 @@ namespace DG
 
     /** @brief Equispaced nodes on a simplex */
     template<int N, int P>
-    SimplexArray<Tuple<double,N>,N,P> simplexNodes()
+    typename std::enable_if<P!=1, SimplexArray<Tuple<double,N>,N,P>>::type simplexNodes()
     {
         SimplexArray<Tuple<double,N>,N,P> nodes;
         for (auto it = nodes.begin(); it != nodes.end(); ++it) {
             *it = it.index().template cast<double>() / (P-1);
         }
         return nodes;
+    }
+
+    /** @brief Equispaced nodes on a simplex */
+    template<int N, int P>
+    typename std::enable_if<P==1, SimplexArray<Tuple<double,N>,N,1>>::type simplexNodes()
+    {
+        return {1.0/3.0*Tuple<double,N>::Ones()};
     }
 
     /** @brief Compute the normalized Jacobi polynomials */
@@ -302,6 +316,16 @@ namespace DG
         return diff;
     }
 
+    template<int N, int P, int Q>
+    SimplexElemQuadMat<N,P,Q> simplexPhi()
+    {
+        SimplexElemQuadMat<N,P,Q> phi;
+        for (SimplexRangeIterator<N,P> it; it != SimplexRange<N,P>::end(); ++it) {
+            phi.row(it.linearIndex()) = koornwinder<N,Quadrature<N,Q>::size>(Quadrature<N,Q>::nodes, it.index());
+        }
+        return simplexVandermonde<N,P>().inverse().transpose() * phi;
+    }
+
     template<int N, int P>
     const SimplexArray<Tuple<double,N>,N,P> Master<N,P>::nodes = simplexNodes<N,P>();
     template<int N, int P>
@@ -316,6 +340,9 @@ namespace DG
     const SimplexMat<N,P> Master<N,P>::invmass = simplexMass<N,P>().inverse();
     template<int N, int P>
     const std::array<SimplexMat<N,P>,N> Master<N,P>::diff = simplexDiff<N,P>();
+
+    template<int N, int P, int Q>
+    const SimplexElemQuadMat<N,P,Q> Phi<N,P,Q>::phi = simplexPhi<N,P,Q>();
 
     /*** 1D ***/
 

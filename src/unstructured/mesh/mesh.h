@@ -10,6 +10,7 @@
 #include "wireframe.h"
 #include "master.h"
 #include "timer.h"
+#include "function.h"
 
 namespace DG
 {
@@ -139,7 +140,7 @@ namespace DG
         /** The inverse mass matrix for the element */
         SimplexMat<N,P> invmass() const
         {
-            double jac = 1/volume();
+            double jac = 1.0/volume();
             return Master<N,P>::invmass * jac;
         }
 
@@ -289,6 +290,24 @@ namespace DG
 
             ne = elements.size();
             nf = faces.size();
+        }
+
+        /** @brief Perform an L^2 projection of a function */
+        Function<N,P> l2_project(const std::function<double(Tuple<double,N>)>& f)
+        {
+            Function<N,P> f_proj(*this);
+            Vec<Quadrature<N,Q>::size> w(Quadrature<N,Q>::weights.data());
+            for (int i=0; i<ne; ++i) {
+                const Element<N,P>& e = elements[i];
+                // Evaluate f at the quadrature points
+                Vec<Quadrature<N,Q>::size> f_eval;
+                for (int j=0; j<Quadrature<N,Q>::size; ++j) {
+                    Tuple<double,N> q = e.simplex.p[0].matrix() + e.simplex.jacobian_mat()*Quadrature<N,Q>::nodes[j].matrix();
+                    f_eval[j] = f(q);
+                }
+                f_proj.vec(i) = e.invmass() * (Phi<N,P,Q>::phi * (e.volume()*Master<N,P>::volume*w.asDiagonal()) * f_eval);
+            }
+            return f_proj;
         }
 
         /** @brief Compute the lifting matrices for a given face
