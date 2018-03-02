@@ -65,7 +65,6 @@ namespace DG
                 for (int i=0; i<Quadrature<N-1,Q>::size; ++i) {
                     Tuple<double,N-1> faceref = Quadrature<N-1,Q>::nodes[i];
                     Tuple<double,N> facephys = simplex.p[0].matrix() + simplex.jacobian_mat()*faceref.matrix();
-                    Simplex<N> simplex_l = mesh.elements[left].simplex;
                     xl[i] = Jinv_l * (facephys - simplex_l.p[0]).matrix();
                 }
             }
