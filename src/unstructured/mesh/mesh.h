@@ -29,33 +29,38 @@ namespace DG
             simplex(simplex_)
         {
             if (interiorQ()) {
-                // Compute slicing matrices for left and right elements
-                slice_l = SimplexSliceMat<N,P>::Zero();
-                slice_r = SimplexSliceMat<N,P>::Zero();
-                Simplex<N> simplex_l = mesh.elements[left].simplex;
-                Simplex<N> simplex_r = mesh.elements[right].simplex;
-                Mat<N> Jinv_l = simplex_l.jacobian_mat().inverse();
-                Mat<N> Jinv_r = simplex_r.jacobian_mat().inverse();
-                // Loop through face nodes
-                for (SimplexRangeIterator<N-1,P> it; it != SimplexRange<N-1,P>::end(); ++it) {
-                    int i = it.linearIndex();
-                    Tuple<double,N-1> faceref = Master<N-1,P>::nodes(i);
-                    Tuple<double,N> facephys = simplex.p[0].matrix() + simplex.jacobian_mat()*faceref.matrix();
-                    Tuple<double,N> nl = Jinv_l * (facephys - simplex_l.p[0]).matrix();
-                    Tuple<double,N> nr = Jinv_r * (facephys - simplex_r.p[0]).matrix();
-                    // Loop through volume nodes to find a match
-                    bool found_l = false, found_r = false;
-                    for (SimplexRangeIterator<N,P> jt; jt != SimplexRange<N,P>::end(); ++jt) {
-                        int j = jt.linearIndex();
-                        if (!found_l && ((nl - Master<N,P>::nodes(j)).abs() < 1e-6).all()) {
-                            slice_l(i,j) = 1;
-                            found_l = true;
+                if (P == 1) {
+                    slice_l = SimplexSliceMat<N,P>::Identity();
+                    slice_r = SimplexSliceMat<N,P>::Identity();
+                } else {
+                    // Compute slicing matrices for left and right elements
+                    slice_l = SimplexSliceMat<N,P>::Zero();
+                    slice_r = SimplexSliceMat<N,P>::Zero();
+                    Simplex<N> simplex_l = mesh.elements[left].simplex;
+                    Simplex<N> simplex_r = mesh.elements[right].simplex;
+                    Mat<N> Jinv_l = simplex_l.jacobian_mat().inverse();
+                    Mat<N> Jinv_r = simplex_r.jacobian_mat().inverse();
+                    // Loop through face nodes
+                    for (SimplexRangeIterator<N-1,P> it; it != SimplexRange<N-1,P>::end(); ++it) {
+                        int i = it.linearIndex();
+                        Tuple<double,N-1> faceref = Master<N-1,P>::nodes(i);
+                        Tuple<double,N> facephys = simplex.p[0].matrix() + simplex.jacobian_mat()*faceref.matrix();
+                        Tuple<double,N> nl = Jinv_l * (facephys - simplex_l.p[0]).matrix();
+                        Tuple<double,N> nr = Jinv_r * (facephys - simplex_r.p[0]).matrix();
+                        // Loop through volume nodes to find a match
+                        bool found_l = false, found_r = false;
+                        for (SimplexRangeIterator<N,P> jt; jt != SimplexRange<N,P>::end(); ++jt) {
+                            int j = jt.linearIndex();
+                            if (!found_l && ((nl - Master<N,P>::nodes(j)).abs() < 1e-6).all()) {
+                                slice_l(i,j) = 1;
+                                found_l = true;
+                            }
+                            if (!found_r && ((nr - Master<N,P>::nodes(j)).abs() < 1e-6).all()) {
+                                slice_r(i,j) = 1;
+                                found_r = true;
+                            }
+                            if (found_l && found_r) break;
                         }
-                        if (!found_r && ((nr - Master<N,P>::nodes(j)).abs() < 1e-6).all()) {
-                            slice_r(i,j) = 1;
-                            found_r = true;
-                        }
-                        if (found_l && found_r) break;
                     }
                 }
             } else {
