@@ -220,7 +220,7 @@ namespace DG
             }
 
             nb = 0;
-            ngb = bndfuns.size();
+            ngb = bndfuns.empty() ? 1 : bndfuns.size();
             for (auto it = f2t.begin(); it != f2t.end(); ++it) {
                 // Get the left and right simplices
                 int id1 = it->second[0];
