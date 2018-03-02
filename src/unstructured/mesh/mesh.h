@@ -305,7 +305,7 @@ namespace DG
                     Tuple<double,N> q = e.simplex.p[0].matrix() + e.simplex.jacobian_mat()*Quadrature<N,Q>::nodes[j].matrix();
                     f_eval[j] = f(q);
                 }
-                f_proj.vec(i) = e.invmass() * (Phi<N,P,Q>::phi * (e.volume()*Master<N,P>::volume*w.asDiagonal()) * f_eval);
+                f_proj.vec(i) = e.invmass() * Phi<N,P,Q>::phi * (e.volume * Master<N,P>::volume * w.asDiagonal()) * f_eval;
             }
             return f_proj;
         }
@@ -336,7 +336,7 @@ namespace DG
 
                 // Scale the quadrature weights according to the area of the face
                 Vec<Quadrature<N-1,Q>::size> w(Quadrature<N-1,Q>::weights.data());
-                w *= f.area();
+                w *= f.area() * Master<N-1,P>::volume;
 
                 if (L) *L = phi_l.transpose() * w.asDiagonal();
                 if (LL) *LL = (L ? *L : phi_l.transpose() * w.asDiagonal()) * phi_l;
