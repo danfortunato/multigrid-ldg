@@ -5,6 +5,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include "common.h"
 
 namespace DG
 {

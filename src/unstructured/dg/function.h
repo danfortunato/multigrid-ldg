@@ -7,6 +7,7 @@
 #include <cmath>
 #include <string>
 #include <fstream>
+#include "common.h"
 #include "mesh.h"
 #include "ndarray.h"
 

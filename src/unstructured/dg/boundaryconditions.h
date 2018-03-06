@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <functional>
+#include "common.h"
 #include "mesh.h"
 
 namespace DG

@@ -2,6 +2,7 @@
 #define RANGE_H
 
 #include <stdexcept>
+#include "common.h"
 
 namespace DG
 {
