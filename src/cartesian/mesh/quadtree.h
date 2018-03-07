@@ -22,7 +22,7 @@ namespace DG
         kRapidCoarsening
     };
 
-    /** @brief An n-dimensional cell. The bounding box of the cell is specified
+    /** @brief An N-dimensional cell. The bounding box of the cell is specified
      *         by the coordinates of its lower left and upper right corners. */
     template<int N>
     struct Cell
@@ -89,7 +89,7 @@ namespace DG
                (cell1.upper == cell2.upper).all();
     }
 
-    /** @brief An n-dimensional quadtree */
+    /** @brief An N-dimensional quadtree */
     template<int N>
     class Quadtree
     {
