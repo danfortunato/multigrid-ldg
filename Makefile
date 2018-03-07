@@ -1,12 +1,16 @@
 INTELROOT = /opt/intel
 MKLROOT   = $(INTELROOT)/mkl
 
+EXT         = lib
+EIGENDIR    = /usr/local/include/eigen3
+MGRIDGENDIR = $(EXT)/ParMGridGen-1.0
+
 CC     = gcc-7
 CXX    = g++-7
 CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -std=c++17 -march=native
-INCDIR = -I.. -I$(MKLROOT)/include
-LIBDIR =
-LIB    = -lmkl_intel_lp64 -lmkl_core -lm -ldl
+INCDIR = -I$(EIGENDIR) -I$(MKLROOT)/include -I$(MGRIDGENDIR)
+LIBDIR = -L$(MGRIDGENDIR)
+LIB    = -lmkl_intel_lp64 -lmkl_core -lm -ldl -lmgrid
 
 ifndef BUILD
 	BUILD = debug
