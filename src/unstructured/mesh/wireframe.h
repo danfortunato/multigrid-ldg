@@ -2,84 +2,12 @@
 #define WIREFRAME_H
 
 #include <vector>
-#include <array>
 #include <fstream>
 #include <sstream>
 #include "common.h"
 
 namespace DG
 {
-    /** @brief An N-dimensional simplex (embedded in dimension D) */
-    template<int N, int D = N>
-    struct Simplex
-    {
-        static_assert(N <= D);
-
-        /** @brief Construct a unit simplex */
-        Simplex()
-        {
-            p[0] = Tuple<double,D>::Zero();
-            for (int i=0; i<N; ++i) {
-                p[i+1] = Tuple<double,D>::Zero();
-                p[i+1][i] = 1;
-            }
-        }
-
-        /** @brief Construct a simplex from the given points */
-        Simplex(const std::array<Tuple<double,D>,N+1>& p_) :
-            p(p_)
-        {}
-
-        /** @brief The Jacobian matrix */
-        Mat<D,N> jacobian_mat() const
-        {
-            Mat<D,N> J;
-            for (int i=0; i<N; ++i) {
-                J.col(i) = p[i+1]-p[0];
-            }
-            return J;
-        }
-
-        /** @brief The Jacobian determinant */
-        double jacobian_det() const
-        {
-            return jacobian_mat().determinant();
-        }
-
-        /** @brief The Gramian matrix */
-        Mat<N> gramian_mat() const
-        {
-            Mat<N> G;
-            Mat<D,N> J = jacobian_mat();
-            for (int i=0; i<N; ++i) {
-                for (int j=0; j<N; ++j) {
-                    G(i,j) = J.col(i).dot(J.col(j));
-                }
-            }
-            return G;
-        }
-
-        /** @brief The Gramian determinant */
-        double gramian_det() const
-        {
-            return gramian_mat().determinant();
-        }
-
-        /** @brief The volume of the simplex
-         *
-         *  @note If the simplex is embedded, the volume is computed with
-         *        respect to the intrinsic dimension N, not the embedded
-         *        dimension D.
-         */
-        double volume() const
-        {
-            return std::sqrt(gramian_det()) / ifac(N);
-        }
-
-        /** @brief The points defining the simplex */
-        std::array<Tuple<double,D>,N+1> p;
-    };
-
     /** @brief A wireframe for an unstructured mesh */
     template<int N>
     struct Wireframe

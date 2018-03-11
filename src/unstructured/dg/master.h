@@ -5,7 +5,7 @@
 #include "common.h"
 #include "range.h"
 #include "ndarray.h"
-#include "wireframe.h"
+#include "geometry.h"
 
 namespace DG
 {

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "common.h"
 #include "wireframe.h"
+#include "geometry.h"
 #include "master.h"
 #include "timer.h"
 #include "function.h"
