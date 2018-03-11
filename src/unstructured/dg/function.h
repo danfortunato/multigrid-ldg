@@ -4,7 +4,6 @@
 #include <functional>
 #include <algorithm>
 #include <limits>
-#include <cmath>
 #include <string>
 #include <fstream>
 #include "common.h"

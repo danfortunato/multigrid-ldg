@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
 #include <mkl.h>
+#include <cmath>
 
 namespace DG
 {

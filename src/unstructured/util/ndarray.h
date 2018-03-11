@@ -4,7 +4,6 @@
 #include <array>
 #include <vector>
 #include <stdexcept>
-#include <cmath>
 #include "common.h"
 #include "range.h"
 
