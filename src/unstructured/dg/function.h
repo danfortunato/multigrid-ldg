@@ -106,9 +106,9 @@ namespace DG
             }
 
             /** @brief Represent the function's coefficients as a Vector (const version) */
-            const Map<const Vector>& vec() const
+            const Map<Vector>& vec() const
             {
-                new (&vec_) Map<const Vector>(data(), size(), 1);
+                new (&vec_) Map<Vector>(data(), size(), 1);
                 return vec_;
             }
 
