@@ -85,7 +85,7 @@ namespace DG
         /** The mass matrix for this face */
         SimplexMat<N-1,P> mass() const
         {
-            double jac = area();
+            double jac = area() / Master<N-1,P>::volume;
             return Master<N-1,P>::mass * jac;
         }
 
@@ -138,14 +138,14 @@ namespace DG
         /** The mass matrix for the element */
         SimplexMat<N,P> mass() const
         {
-            double jac = volume();
+            double jac = volume() / Master<N,P>::volume;
             return Master<N,P>::mass * jac;
         }
 
         /** The inverse mass matrix for the element */
         SimplexMat<N,P> invmass() const
         {
-            double jac = 1.0/volume();
+            double jac = Master<N,P>::volume / volume();
             return Master<N,P>::invmass * jac;
         }
 

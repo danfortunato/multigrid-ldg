@@ -299,7 +299,7 @@ namespace DG
     {
         SimplexMat<N,P> V = simplexVandermonde<N,P>();
         SimplexMat<N,P> Vinv = V.inverse();
-        return Vinv.transpose() * Vinv / Master<N,P>::volume;
+        return Vinv.transpose() * Vinv;
     }
 
     /** @brief The differentiation matrices on the unit simplex */
