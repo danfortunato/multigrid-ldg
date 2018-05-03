@@ -123,6 +123,9 @@ namespace DG
     template<int N, int P, int Q>
     using SimplexFaceQuadMat = Mat<ichoose(P+N-1,N),Quadrature<N-1,Q>::size>;
 
+    template<int N, int P, int Q = P>
+    using KronToSimplexMat = Mat<ichoose(P+N-1,N),ipow(Q,N)>;
+
     /** Wrapper to convert raw pointer to Eigen */
     template<typename T>
     using Map = Eigen::Map<T>;
