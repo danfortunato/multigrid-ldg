@@ -42,11 +42,23 @@ namespace DG
         }
     };
 
-    template<int N, int P, int Q>
+    template<int N, int Q>
+    Vec<Q> koornwinder(const std::array<Tuple<double,N>,Q>& nodes, const Tuple<int,N>& porder);
+
+    template<int N, int P, int Q = P>
     struct Phi
     {
         /** @brief Basis functions evaluated at quadrature points */
         static const SimplexElemQuadMat<N,P,Q> phi;
+
+        static SimplexVec<N,P> eval(const Tuple<double,N>& x)
+        {
+            SimplexVec<N,P> phi;
+            for (SimplexRangeIterator<N,P> it; it != SimplexRange<N,P>::end(); ++it) {
+                phi(it.linearIndex()) = koornwinder<N,1>({x}, it.index()).value();
+            }
+            return Master<N,P>::invvandermonde.transpose() * phi;
+        }
     };
 
     /** Hack to initialize the number of quadrature points */
