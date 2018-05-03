@@ -5,8 +5,8 @@ EXT         = lib
 EIGENDIR    = /usr/local/include/eigen3
 MGRIDGENDIR = $(EXT)/ParMGridGen-1.0
 
-CC     = gcc-7
-CXX    = g++-7
+CC     = gcc-8
+CXX    = g++-8
 CFLAGS = -Wall -Wextra -Wno-int-in-bool-context -Wno-unused-parameter -std=c++17 -march=native
 INCDIR = -I$(EIGENDIR) -I$(MKLROOT)/include -I$(MGRIDGENDIR)
 LIBDIR = -L$(MGRIDGENDIR)
